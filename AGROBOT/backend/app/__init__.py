@@ -1,0 +1,3 @@
+"""
+AgroBot Backend - FastAPI
+"""
