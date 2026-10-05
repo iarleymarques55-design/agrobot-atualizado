@@ -2,70 +2,114 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const PLANT_SVG = (
-  <svg viewBox="0 0 24 24" fill="none" style={{width:16,height:16}}>
-    <path d="M12 22V12" stroke="#A3E635" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M12 12C12 12 7 11 5 6C5 6 10 4 14 8C14 8 16 10 12 12Z" fill="#A3E635" fillOpacity="0.4" stroke="#A3E635" strokeWidth="1.5" strokeLinejoin="round"/>
-    <path d="M12 17C12 17 16 15 18 10C18 10 13 9 10 14C10 14 9 16 12 17Z" fill="#4ADE80" fillOpacity="0.35" stroke="#4ADE80" strokeWidth="1.5" strokeLinejoin="round"/>
+  <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18 }}>
+    <path d="M12 22V11" stroke="#1F5E39" strokeWidth="2.2" strokeLinecap="round" />
+    <path
+      d="M12 11C12 11 7.5 9.8 5.5 5.5C5.5 5.5 10 3.8 13.5 7.5C13.5 7.5 15.2 9.2 12 11Z"
+      fill="#2E8B57"
+      fillOpacity="0.85"
+      stroke="#1F5E39"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M12 15.5C12 15.5 16 13.8 17.8 9.5C17.8 9.5 13.5 8.5 10.5 13C10.5 13 9.8 14.5 12 15.5Z"
+      fill="#4CAF50"
+      fillOpacity="0.75"
+      stroke="#1F5E39"
+      strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
 // ── Auth helpers ──
-function getToken()  { return sessionStorage.getItem('agro_token'); }
-function getUser()   { try { return JSON.parse(sessionStorage.getItem('agro_user')); } catch { return null; } }
-function authHeader(){ return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' }; }
+function getToken() {
+  return sessionStorage.getItem('agro_token');
+}
+function getUser() {
+  try {
+    return JSON.parse(sessionStorage.getItem('agro_user'));
+  } catch {
+    return null;
+  }
+}
+function authHeader() {
+  return {
+    Authorization: 'Bearer ' + getToken(),
+    'Content-Type': 'application/json',
+  };
+}
 
-// ── API URL (proxied via Vite in dev, same origin in prod) ──
+// ── API URL ──
 const API = import.meta.env.VITE_API_URL || '';
 
-// ── markdown formatter ──
+// ── Markdown formatter ──
 function fmtMd(t) {
   return t
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,'<em>$1</em>')
-    .replace(/`([^`]+)`/g,'<code>$1</code>')
-    .replace(/^### (.+)$/gm,'<h3 style="color:var(--green);font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:14px 0 6px">$1</h3>')
-    .replace(/^## (.+)$/gm,'<h3 style="color:var(--green);font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:14px 0 6px">$1</h3>')
-    .replace(/^- (.+)$/gm,'<li style="margin-left:16px;margin-bottom:4px">$1</li>')
-    .replace(/^\d+\. (.+)$/gm,'<li style="margin-left:16px;margin-bottom:4px">$1</li>')
-    .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')
-    .replace(/^/,'<p>').replace(/$/,'</p>');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code class="agro-code-inline">$1</code>')
+    .replace(
+      /^### (.+)$/gm,
+      '<h3 class="agro-chat-h3">$1</h3>'
+    )
+    .replace(
+      /^## (.+)$/gm,
+      '<h2 class="agro-chat-h2">$1</h2>'
+    )
+    .replace(
+      /^- (.+)$/gm,
+      '<li class="agro-chat-li">$1</li>'
+    )
+    .replace(
+      /^\d+\. (.+)$/gm,
+      '<li class="agro-chat-li">$1</li>'
+    )
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>');
 }
 
 function buildSystemPrompt(lang = 'pt-BR') {
-  const langMap = {'pt-BR':'português brasileiro','en':'English','es':'español'};
+  const langMap = {
+    'pt-BR': 'português brasileiro',
+    en: 'English',
+    es: 'español',
+  };
   const l = langMap[lang] || 'português brasileiro';
   return `Você é o AgroBot, um assistente especialista em agronomia e agricultura tropical brasileira. Você tem vasto conhecimento em:
-- Solos: análise, correção de pH, adubação, calagem, manejo de fertilidade
-- Culturas: soja, milho, café, cana, tomate, feijão, hortaliças, fruticultura e outras
-- Pragas e doenças: diagnóstico, manejo integrado (MIP), defensivos
-- Irrigação: gotejamento, aspersão, pivô central, manejo hídrico
-- Sustentabilidade: plantio direto, rotação de culturas, agroecologia
-- Colheita, pós-colheita e armazenamento
-- Clima e zoneamento agrícola do Brasil
+- Solos: interpretação de laudos laboratoriais, saturação de bases (V%), calagem (NC), gessagem, CTC e balanço nutricional Ca/Mg/K
+- Fitossanidade: identificação de pragas, fungos, nematoides, viroses e MIP com produtos cadastrados no Agrofit/MAPA
+- Irrigação: dimensionamento hídrico, lâmina líquida e bruta, turno de rega e Kc por cultura
+- Culturas: soja, milho, algodão, café, cana, feijão, trigo, fruticultura, hortaliças e pastagens
+- Prescrição Técnica: elaboração de laudos, receituários agronômicos e planos de manejo completos
 
-Quando o usuário enviar uma imagem, analise-a detalhadamente: identifique plantas, pragas, doenças, deficiências nutricionais, solo ou qualquer elemento agrícola visível.
-
-GERAÇÃO DE DOCUMENTOS: Quando o usuário pedir para gerar um relatório, laudo, receituário agronômico, ficha técnica, plano de manejo ou qualquer documento técnico, você deve SEMPRE redigir o documento completo e formatado no chat. Estruture o documento com seções claras usando títulos (## SEÇÃO) e campos em **negrito**.
-
-Responda sempre em ${l}. Use **negrito** para termos técnicos importantes. Seja direto, técnico e completo.`;
+Quando o usuário enviar fotos, faça análise detalhada de sintomas visuais, órgãos afetados e hipóteses com limiar de dano econômico.
+Responda sempre em ${l}. Use negrito para parâmetros técnicos essenciais e seja claro, rigoroso e fundamentado.`;
 }
 
 function getSavedSettings() {
-  return Object.assign({ tokens:1000, lang:'pt-BR', compact:false, anim:true },
-    JSON.parse(sessionStorage.getItem('agro_settings') || '{}'));
+  return Object.assign(
+    { tokens: 1200, lang: 'pt-BR', compact: false, anim: true },
+    JSON.parse(sessionStorage.getItem('agro_settings') || '{}')
+  );
 }
 
 export default function Chat() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [messages, setMessages] = useState([]);          // {id, role, html, text, files}
-  const [conversationHistory, setConversationHistory] = useState([]); // for API
+  const [messages, setMessages] = useState([]);
+  const [conversationHistory, setConversationHistory] = useState([]);
   const [inputVal, setInputVal] = useState('');
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [historyItems, setHistoryItems] = useState([]);  // {id, title, serverId}
+  const [historyItems, setHistoryItems] = useState([]);
   const [activeConvId, setActiveConvId] = useState(null);
   const [activeServerId, setActiveServerId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -79,18 +123,21 @@ export default function Chat() {
   const [toast, setToast] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [charCount, setCharCount] = useState(0);
+
   const chatAreaRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const convSnapshotsRef = useRef({});
 
-  // ── Load user on mount ──
   useEffect(() => {
     const token = getToken();
-    if (!token) { navigate('/'); return; }
+    if (!token) {
+      navigate('/');
+      return;
+    }
     fetch(`${API}/api/me`, { headers: authHeader() })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => {
         sessionStorage.setItem('agro_user', JSON.stringify(data.user));
         setUser(data.user);
         return loadServerConversations();
@@ -100,23 +147,33 @@ export default function Chat() {
         if (cached) setUser(cached);
         else navigate('/');
       });
-  }, []);
+  }, [navigate]);
 
   function scrollBot() {
-    if (chatAreaRef.current) chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+    if (chatAreaRef.current) {
+      chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+    }
   }
-  useEffect(() => { scrollBot(); }, [messages, isTyping]);
 
-  // ── Server conversations ──
+  useEffect(() => {
+    scrollBot();
+  }, [messages, isTyping]);
+
   async function loadServerConversations() {
     try {
       const r = await fetch(`${API}/api/conversations`, { headers: authHeader() });
       if (!r.ok) return;
       const data = await r.json();
       const convs = data.conversations || [];
-      setHistoryItems(prev => {
-        const ids = new Set(prev.map(x => x.serverId));
-        const newItems = convs.filter(c => !ids.has(c.id)).map(c => ({ id: `server_${c.id}`, title: c.title || 'Nova conversa', serverId: c.id }));
+      setHistoryItems((prev) => {
+        const ids = new Set(prev.map((x) => x.serverId));
+        const newItems = convs
+          .filter((c) => !ids.has(c.id))
+          .map((c) => ({
+            id: `server_${c.id}`,
+            title: c.title || 'Consulta agronômica',
+            serverId: c.id,
+          }));
         return [...newItems, ...prev];
       });
     } catch {}
@@ -125,612 +182,940 @@ export default function Chat() {
   async function createServerConversation(title) {
     try {
       const r = await fetch(`${API}/api/conversations`, {
-        method: 'POST', headers: authHeader(), body: JSON.stringify({ title: title || 'Nova conversa' })
+        method: 'POST',
+        headers: authHeader(),
+        body: JSON.stringify({ title: title || 'Consulta agronômica' }),
       });
       if (!r.ok) return null;
       const data = await r.json();
       return data.conversation?.id || null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   async function saveServerMessage(convId, role, content) {
     if (!convId || !content || (typeof content === 'string' && !content.trim())) return;
     try {
       await fetch(`${API}/api/conversations/${convId}/messages`, {
-        method: 'POST', headers: authHeader(), body: JSON.stringify({ role, content })
+        method: 'POST',
+        headers: authHeader(),
+        body: JSON.stringify({ role, content }),
       });
     } catch {}
   }
 
   async function loadServerConversation(serverId) {
     try {
-      const r = await fetch(`${API}/api/conversations/${serverId}/messages`, { headers: authHeader() });
+      const r = await fetch(`${API}/api/conversations/${serverId}/messages`, {
+        headers: authHeader(),
+      });
       if (!r.ok) return;
       const data = await r.json();
       if (!Array.isArray(data.messages)) return;
-      setShowWelcome(false);
-      const newHistory = [];
-      const newMessages = data.messages.map((msg, i) => {
-        newHistory.push({ role: msg.role, content: msg.content || '' });
-        return {
-          id: i,
-          role: msg.role,
-          html: msg.role === 'assistant' ? fmtMd(msg.content || '') : `<p>${esc(msg.content || '')}</p>`,
-          text: msg.content || '',
-          files: []
-        };
-      });
-      setMessages(newMessages);
-      setConversationHistory(newHistory);
+      const parsed = data.messages.map((m, i) => ({
+        id: `srv_${m.id || i}`,
+        role: m.role,
+        html: fmtMd(m.content || ''),
+        text: m.content || '',
+        files: [],
+      }));
+      setMessages(parsed);
+      setShowWelcome(parsed.length === 0);
+      setConversationHistory(
+        parsed.map((m) => ({
+          role: m.role,
+          content: m.text,
+        }))
+      );
     } catch {}
   }
 
-  function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  // ── New chat ──
-  function newChat() {
-    if (activeConvId) {
-      convSnapshotsRef.current[activeConvId] = { messages, history: conversationHistory };
-    }
-    setMessages([]); setConversationHistory([]); setShowWelcome(true);
-    setActiveConvId(null); setActiveServerId(null); setInputVal('');
-    setPendingFiles([]); setHistoryItems(prev => prev.map(h => ({ ...h, active: false })));
-    if (window.innerWidth <= 768) setSidebarOpen(false);
+  function showToast(msg) {
+    setToast(msg);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 3200);
   }
 
-  // ── Select history item ──
-  async function selectHistory(item) {
-    if (activeConvId) {
-      convSnapshotsRef.current[activeConvId] = { messages, history: conversationHistory };
-    }
-    setHistoryItems(prev => prev.map(h => ({ ...h, active: h.id === item.id })));
-    setActiveConvId(item.id);
-    setActiveServerId(item.serverId || null);
-    if (item.serverId) {
-      await loadServerConversation(item.serverId);
-    } else {
-      const snap = convSnapshotsRef.current[item.id];
-      if (snap) { setMessages(snap.messages); setConversationHistory(snap.history); setShowWelcome(false); }
-    }
-    if (window.innerWidth <= 768) setSidebarOpen(false);
-  }
-
-  // ── Send message ──
-  async function sendMessage() {
-    const text = inputVal.trim();
-    if ((!text && !pendingFiles.length) || isTyping) return;
-
-    let currentServerId = activeServerId;
-    let currentConvId = activeConvId;
-
-    if (!currentConvId) {
-      setShowWelcome(false);
-      const title = text || pendingFiles[0]?.name || 'Nova conversa';
-      const serverId = await createServerConversation(title);
-      const newId = serverId ? `server_${serverId}` : `local_${Date.now()}`;
-      currentConvId = newId;
-      currentServerId = serverId;
-      setActiveConvId(newId);
-      setActiveServerId(serverId);
-      setHistoryItems(prev => [
-        { id: newId, title, serverId, active: true },
-        ...prev.map(h => ({ ...h, active: false }))
-      ]);
-    }
-
-    const files = [...pendingFiles];
-    setPendingFiles([]);
-    const imgFiles = files.filter(f => f.type?.startsWith('image/'));
-    const otherFiles = files.filter(f => !f.type?.startsWith('image/'));
-    let apiText = text;
-    otherFiles.forEach(f => { apiText += `\n[Arquivo: ${f.name}]\n${String(f.data).slice(0,2000)}`; });
-
-    const userMsgId = Date.now();
-    setMessages(prev => [...prev, { id: userMsgId, role: 'user', html: text ? `<p>${esc(text)}</p>` : '', text, files }]);
-    setInputVal(''); setCharCount(0);
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
-
-    if (currentServerId) saveServerMessage(currentServerId, 'user', apiText);
-
-    // Build user content for API
-    let userContent;
-    if (imgFiles.length > 0) {
-      userContent = [];
-      imgFiles.forEach(f => {
-        const mime = f.type || 'image/jpeg';
-        const b64 = f.data.includes(',') ? f.data.split(',')[1] : f.data;
-        userContent.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } });
-      });
-      if (apiText) userContent.push({ type: 'text', text: apiText });
-    } else {
-      userContent = apiText;
-    }
-
-    const newHistory = [...conversationHistory, { role: 'user', content: userContent }];
-    setConversationHistory(newHistory);
-    setIsTyping(true);
-
-    const s = getSavedSettings();
-    try {
-      const resp = await fetch(`${API}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-        body: JSON.stringify({ max_tokens: s.tokens, system: buildSystemPrompt(s.lang), messages: newHistory, stream: true })
-      });
-      if (resp.status === 401) { sessionStorage.clear(); navigate('/'); return; }
-      if (!resp.ok) throw new Error('API error');
-      setIsTyping(false);
-
-      const botId = Date.now() + 1;
-      setMessages(prev => [...prev, { id: botId, role: 'assistant', html: '', text: '', files: [], streaming: true }]);
-
-      let full = '';
-      const reader = resp.body.getReader();
-      const dec = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = dec.decode(value, { stream: true });
-        for (const line of chunk.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          const d = line.slice(6).trim();
-          if (d === '[DONE]') continue;
-          try {
-            const p = JSON.parse(d);
-            if (p.type === 'content_block_delta' && p.delta?.type === 'text_delta') {
-              full += p.delta.text;
-              setMessages(prev => prev.map(m => m.id === botId ? { ...m, html: fmtMd(full), text: full } : m));
-            }
-          } catch {}
-        }
-      }
-      setMessages(prev => prev.map(m => m.id === botId ? { ...m, streaming: false } : m));
-      const updatedHistory = [...newHistory, { role: 'assistant', content: full }];
-      setConversationHistory(updatedHistory);
-      if (currentServerId) saveServerMessage(currentServerId, 'assistant', full);
-      if (currentConvId) convSnapshotsRef.current[currentConvId] = { messages: undefined, history: updatedHistory };
-    } catch {
-      setIsTyping(false);
-      const errId = Date.now() + 2;
-      setMessages(prev => [...prev, { id: errId, role: 'assistant', html: '<p>⚠️ Erro ao conectar com a IA. Verifique sua conexão.</p>', text: '', files: [] }]);
-    }
+  function handleInput(e) {
+    setInputVal(e.target.value);
+    setCharCount(e.target.value.length);
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 180) + 'px';
   }
 
   function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  }
-  function handleInput(e) {
-    const el = e.target;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 180) + 'px';
-    setInputVal(el.value);
-    setCharCount(el.value.length);
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   }
 
   function handleFiles(e) {
-    Array.from(e.target.files).forEach(file => {
+    const files = Array.from(e.target.files);
+    files.forEach((file) => {
       const reader = new FileReader();
-      reader.onload = ev => {
-        setPendingFiles(prev => [...prev, { name: file.name, type: file.type, data: ev.target.result }]);
+      reader.onload = (ev) => {
+        setPendingFiles((prev) => [
+          ...prev,
+          { name: file.name, type: file.type, data: ev.target.result },
+        ]);
       };
-      if (file.type.startsWith('image/')) reader.readAsDataURL(file);
-      else reader.readAsText(file);
+      reader.readAsDataURL(file);
     });
     e.target.value = '';
   }
 
-  // ── Settings ──
-  function saveSettings() {
-    sessionStorage.setItem('agro_settings', JSON.stringify(settings));
-    setSettingsOpen(false);
+  async function sendMessage() {
+    const text = inputVal.trim();
+    if (!text && pendingFiles.length === 0) return;
+    if (isTyping) return;
+
+    let serverId = activeServerId;
+    if (!serverId) {
+      const snippet = text.slice(0, 36) || 'Análise de amostra';
+      serverId = await createServerConversation(snippet);
+      if (serverId) {
+        setActiveServerId(serverId);
+        setHistoryItems((prev) => [
+          { id: `server_${serverId}`, title: snippet, serverId, active: true },
+          ...prev.map((h) => ({ ...h, active: false })),
+        ]);
+      }
+    }
+
+    const userMsg = {
+      id: `u_${Date.now()}`,
+      role: 'user',
+      html: fmtMd(text),
+      text,
+      files: [...pendingFiles],
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setShowWelcome(false);
+    setInputVal('');
+    setCharCount(0);
+    const sentFiles = [...pendingFiles];
+    setPendingFiles([]);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    // Monta content da mensagem do usuário para o formato OpenAI/Groq
+    let userContent;
+    const imageParts = sentFiles
+      .filter((f) => f.type?.startsWith('image/'))
+      .map((f) => ({ type: 'image_url', image_url: { url: f.data } }));
+
+    if (imageParts.length > 0) {
+      userContent = [
+        ...imageParts,
+        ...(text ? [{ type: 'text', text }] : []),
+      ];
+    } else {
+      userContent = text;
+    }
+
+    // Mantém histórico no formato OpenAI {role, content}
+    const newHistory = [
+      ...conversationHistory,
+      { role: 'user', content: userContent },
+    ];
+    setConversationHistory(newHistory);
+    setIsTyping(true);
+
+    if (serverId) saveServerMessage(serverId, 'user', text);
+
+    // ID do botMsg para atualização incremental (streaming)
+    const botId = `b_${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: botId, role: 'assistant', html: '', text: '', streaming: true },
+    ]);
+
+    try {
+      const r = await fetch(`${API}/api/chat`, {
+        method: 'POST',
+        headers: authHeader(),
+        body: JSON.stringify({
+          messages: newHistory,
+          system: buildSystemPrompt(settings.lang),
+          max_tokens: Math.min(Math.max(settings.tokens, 500), 2000),
+          stream: true,
+        }),
+      });
+
+      if (!r.ok) {
+        const errData = await r.json().catch(() => ({}));
+        throw new Error(errData.error || errData.detail || `Erro HTTP ${r.status}`);
+      }
+
+      // Processa SSE streaming
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // última linha pode estar incompleta
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (!data || data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed?.delta?.text || '';
+            if (delta) {
+              accumulated += delta;
+              const html = fmtMd(accumulated);
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === botId ? { ...m, html, text: accumulated } : m
+                )
+              );
+            }
+          } catch {}
+        }
+      }
+
+      // Finaliza mensagem (remove flag streaming)
+      const finalText = accumulated || 'Sem resposta para esta consulta no momento.';
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId
+            ? { ...m, html: fmtMd(finalText), text: finalText, streaming: false }
+            : m
+        )
+      );
+
+      setConversationHistory([
+        ...newHistory,
+        { role: 'assistant', content: finalText },
+      ]);
+
+      if (serverId) saveServerMessage(serverId, 'assistant', finalText);
+    } catch (err) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === botId
+            ? {
+                ...m,
+                html: `<div class="agro-alert error">${err.message || 'Falha na comunicação técnica.'}</div>`,
+                text: err.message,
+                streaming: false,
+              }
+            : m
+        )
+      );
+    } finally {
+      setIsTyping(false);
+    }
   }
 
-  // ── Edit profile ──
+  function newChat() {
+    if (activeConvId && messages.length > 0) {
+      convSnapshotsRef.current[activeConvId] = {
+        messages,
+        history: conversationHistory,
+      };
+    }
+    setMessages([]);
+    setConversationHistory([]);
+    setActiveConvId(null);
+    setActiveServerId(null);
+    setShowWelcome(true);
+    setHistoryItems((prev) => prev.map((h) => ({ ...h, active: false })));
+    setSidebarOpen(false);
+  }
+
+  function selectHistory(item) {
+    if (activeConvId && messages.length > 0) {
+      convSnapshotsRef.current[activeConvId] = {
+        messages,
+        history: conversationHistory,
+      };
+    }
+    setHistoryItems((prev) =>
+      prev.map((h) => ({ ...h, active: h.id === item.id }))
+    );
+    setActiveConvId(item.id);
+    setActiveServerId(item.serverId || null);
+    setSidebarOpen(false);
+
+    if (convSnapshotsRef.current[item.id]) {
+      const snap = convSnapshotsRef.current[item.id];
+      setMessages(snap.messages);
+      setConversationHistory(snap.history);
+      setShowWelcome(snap.messages.length === 0);
+      return;
+    }
+
+    if (item.serverId) {
+      loadServerConversation(item.serverId);
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem('agro_token');
+    sessionStorage.removeItem('agro_user');
+    navigate('/');
+  }
+
   function openEditModal() {
-    setUserMenuOpen(false);
     setEditName(user?.name || '');
-    setEditPlan(user?.plan || '');
+    setEditPlan(user?.plan || 'Agronomia IA');
+    setUserMenuOpen(false);
     setEditModalOpen(true);
   }
-  function updateUser() {
-    if (!editName.trim()) return;
-    const u = { ...user, name: editName.trim(), plan: editPlan.trim() };
-    sessionStorage.setItem('agro_user', JSON.stringify(u));
-    setUser(u);
+
+  async function updateUser() {
+    try {
+      const r = await fetch(`${API}/api/me`, {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify({ name: editName, plan: editPlan }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        setUser(d.user);
+        sessionStorage.setItem('agro_user', JSON.stringify(d.user));
+        showToast('Perfil atualizado com sucesso.');
+      }
+    } catch {}
     setEditModalOpen(false);
   }
 
-  // ── Logout ──
-  function logout() {
-    fetch(`${API}/api/logout`, { method: 'POST', headers: authHeader() }).finally(() => {
-      sessionStorage.clear(); navigate('/');
-    });
+  function saveSettings() {
+    sessionStorage.setItem('agro_settings', JSON.stringify(settings));
+    setSettingsOpen(false);
+    showToast('Preferências salvas.');
   }
 
-  // ── Toast ──
-  function showToast(msg) {
-    setToast(msg); setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 3000);
-  }
-
-  // ── Copy message ──
   function copyMsg(text) {
-    navigator.clipboard.writeText(text).then(() => showToast('✅ Copiado!'));
+    navigator.clipboard.writeText(text).then(() => showToast('Texto copiado para a área de transferência.'));
   }
 
-  // ── Export ──
-  function exportChat(fmt) {
+  function exportChat(ext) {
     setExportOpen(false);
-    if (!messages.length) return;
-    let out = fmt === 'md' ? '# Conversa AgroBot\n\n' : 'Conversa AgroBot\n\n';
-    messages.forEach(m => {
-      const name = m.role === 'user' ? (user?.name || 'Você') : 'AgroBot';
-      out += fmt === 'md' ? `**${name}**\n${m.text}\n\n---\n\n` : `${name}\n${m.text}\n\n`;
+    let out = `AGROBOT - RELATÓRIO DE CONSULTA TÉCNICA\nEmitido em: ${new Date().toLocaleString('pt-BR')}\n\n`;
+    messages.forEach((m) => {
+      const who = m.role === 'user' ? (user?.name || 'Técnico') : 'AgroBot';
+      out += `[${who}]:\n${m.text}\n\n---\n\n`;
     });
+    const blob = new Blob([out], { type: 'text/plain;charset=utf-8' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([out], { type: 'text/plain' }));
-    a.download = `agrobot.${fmt}`; a.click();
+    a.href = URL.createObjectURL(blob);
+    a.download = `agrobot_consulta_${Date.now()}.${ext}`;
+    a.click();
   }
+
   function copyAllChat() {
     setExportOpen(false);
     let out = '';
-    messages.forEach(m => {
-      const name = m.role === 'user' ? (user?.name || 'Você') : 'AgroBot';
-      out += `${name}\n${m.text}\n\n`;
+    messages.forEach((m) => {
+      const who = m.role === 'user' ? (user?.name || 'Técnico') : 'AgroBot';
+      out += `**${who}**:\n${m.text}\n\n`;
     });
-    navigator.clipboard.writeText(out).then(() => showToast('✅ Conversa copiada!'));
+    navigator.clipboard.writeText(out).then(() => showToast('Conversa copiada com sucesso.'));
   }
 
-  // ── PDF generation ──
+  // ── Geração de PDF Oficial ──
   async function generatePDF(title, text) {
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = 210, M = 18, CW = W - M * 2;
     let y = 0;
-    const checkPage = needed => { if (y + needed > 280) { doc.addPage(); y = M; } };
-    doc.setFillColor(11,14,10); doc.rect(0,0,W,28,'F');
-    doc.setDrawColor(163,230,53); doc.setLineWidth(0.5); doc.line(0,28,W,28);
-    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(163,230,53);
-    doc.text('AGROBOT', M, 12);
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(127,191,144);
-    doc.text('Assistente de Agronomia com IA', M, 19);
-    const dateStr = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-    doc.text(dateStr, W-M, 19, {align:'right'}); y = 38;
-    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(240,245,236);
-    doc.text(title, M, y); y += 2;
-    doc.setDrawColor(163,230,53); doc.setLineWidth(0.3); doc.line(M, y+3, W-M, y+3); y += 10;
-    const clean = text.replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').replace(/^#{1,3}\s/gm,'');
-    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(74,222,128); doc.text('AGROBOT', M, y); y += 6;
-    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(210,225,200);
+    const checkPage = (needed) => {
+      if (y + needed > 275) {
+        doc.addPage();
+        y = M;
+      }
+    };
+
+    // Header institucional
+    doc.setFillColor(21, 36, 28);
+    doc.rect(0, 0, W, 26, 'F');
+    doc.setDrawColor(46, 139, 87);
+    doc.setLineWidth(0.6);
+    doc.line(0, 26, W, 26);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text('AGROBOT · LAUDO E PRESCRIÇÃO TÉCNICA', M, 12);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(200, 220, 205);
+    doc.text('Inteligência Agronômica Tropical', M, 18);
+
+    const dateStr = new Date().toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    doc.text(dateStr, W - M, 18, { align: 'right' });
+    y = 36;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(18, 26, 21);
+    doc.text(title, M, y);
+    y += 2;
+    doc.setDrawColor(220, 227, 216);
+    doc.setLineWidth(0.3);
+    doc.line(M, y + 2, W - M, y + 2);
+    y += 9;
+
+    const clean = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/^#{1,3}\s/gm, '');
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 50, 42);
+
     const lines = doc.splitTextToSize(clean, CW);
-    lines.forEach(line => { checkPage(6); doc.text(line, M, y); y += 5.5; });
+    lines.forEach((line) => {
+      checkPage(5.5);
+      doc.text(line, M, y);
+      y += 5.2;
+    });
+
     const total = doc.internal.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
-      doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,110,70);
-      doc.text(`AgroBot IA  ·  Gerado automaticamente  ·  Página ${i} de ${total}`, W/2, 291, {align:'center'});
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(110, 125, 115);
+      doc.text(
+        `AgroBot · Documento Técnico de Apoio · Página ${i} de ${total}`,
+        W / 2,
+        290,
+        { align: 'center' }
+      );
     }
-    const fname = title.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').slice(0,40);
-    doc.save(`agrobot_${fname}.pdf`);
-    showToast('✅ PDF gerado com sucesso!');
+    const fname = title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 36);
+    doc.save(`agrobot_laudo_${fname || 'documento'}.pdf`);
+    showToast('PDF gerado e pronto para arquivamento.');
   }
 
+  // ── Geração de Word (.doc) ──
   function generateWord(title, text) {
-    const date = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
-    const clean = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>')
-      .replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^- (.+)$/gm,'<li>$1</li>')
-      .replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta name="ProgId" content="Word.Document"><style>@page{size:A4;margin:2cm 2.5cm}body{font-family:Calibri,sans-serif;font-size:11pt;color:#1a2b12}h1{font-family:Georgia,serif;color:#2d5a1b;border-bottom:2px solid #a3e635;padding-bottom:6pt}h2,h3{color:#3a7a24}li{margin-bottom:4pt}b{color:#2d5a1b}</style></head><body><table width="100%" style="background:#0b0e0a;padding:14pt 20pt;margin-bottom:20pt"><tr><td><span style="font-family:Courier New;font-size:16pt;font-weight:bold;color:#a3e635;letter-spacing:3pt">AGROBOT</span><br><span style="font-family:Courier New;font-size:8pt;color:#7fbf90">Assistente de Agronomia com IA</span></td><td align="right"><span style="font-size:9pt;color:#7fbf90">${date}</span></td></tr></table><h1>${title}</h1><div style="font-family:Calibri;font-size:11pt;color:#1a2b12;line-height:1.6"><p>${clean}</p></div><p style="font-size:7pt;color:#7fbf90;text-align:center;margin-top:30pt">AgroBot IA &nbsp;&middot;&nbsp; Gerado automaticamente</p></body></html>`;
+    const date = new Date().toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+    const clean = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+      .replace(/\*(.*?)\*/g, '<i>$1</i>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>@page{size:A4;margin:2cm 2.5cm}body{font-family:Calibri,sans-serif;font-size:11pt;color:#121a15}h1{font-family:Georgia,serif;color:#15241c;border-bottom:2px solid #2e8b57;padding-bottom:6pt}h2,h3{color:#1f5e39}li{margin-bottom:4pt}b{color:#15241c}</style></head><body><table width="100%" style="background:#15241c;padding:14pt 20pt;margin-bottom:20pt"><tr><td><span style="font-family:Arial;font-size:14pt;font-weight:bold;color:#ffffff">AGROBOT</span><br><span style="font-family:Arial;font-size:8pt;color:#d5e5db">Laudo Técnico e Prescrição Agronômica</span></td><td align="right"><span style="font-size:9pt;color:#ffffff">${date}</span></td></tr></table><h1>${title}</h1><div><p>${clean}</p></div><p style="font-size:8pt;color:#6c7d70;text-align:center;margin-top:30pt">AgroBot · Documento Técnico Normatizado</p></body></html>`;
+
     const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
-    const fname = title.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').slice(0,40);
+    const fname = title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 36);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `agrobot_${fname}.doc`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    showToast('✅ Documento Word gerado!');
+    a.download = `agrobot_laudo_${fname || 'documento'}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Documento Word gerado com sucesso.');
   }
 
   const uIni = user ? (user.name || '?').charAt(0).toUpperCase() : '?';
   const canSend = (inputVal.trim().length > 0 || pendingFiles.length > 0) && !isTyping;
 
   return (
-    <div className="chat-page">
-      {/* ── Sidebar overlay ── */}
-      <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
+    <div className="agro-chat-viewport">
+      <div
+        className={`agro-sidebar-scrim${sidebarOpen ? ' is-open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
-      {/* ══ SIDEBAR ══ */}
-      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-        <div className="sidebar-header">
-          <a className="sidebar-logo" href="/">
-            <div className="chat-logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" style={{width:18,height:18}}>
-                <path d="M12 22V12" stroke="#A3E635" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M12 12C12 12 7 11 5 6C5 6 10 4 14 8C14 8 16 10 12 12Z" fill="#A3E635" fillOpacity=".4" stroke="#A3E635" strokeWidth="1.5" strokeLinejoin="round"/>
-                <path d="M12 17C12 17 16 15 18 10C18 10 13 9 10 14C10 14 9 16 12 17Z" fill="#4ADE80" fillOpacity=".35" stroke="#4ADE80" strokeWidth="1.5" strokeLinejoin="round"/>
-              </svg>
+      {/* ══ SIDEBAR DO WORKSPACE ══ */}
+      <aside className={`agro-chat-sidebar${sidebarOpen ? ' is-open' : ''}`}>
+        <div className="agro-sidebar-head">
+          <a className="agro-brand" href="/">
+            <div className="agro-brand-mark">{PLANT_SVG}</div>
+            <div className="agro-brand-text">
+              <span className="agro-brand-name">AgroBot</span>
+              <span className="agro-brand-sub">Painel Técnico</span>
             </div>
-            <span className="chat-logo-name"><em>AGRO</em><span>BOT</span></span>
           </a>
-          <button className="btn-new" onClick={newChat} title="Nova conversa">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <button
+            className="agro-icon-btn agro-btn-new-head"
+            onClick={newChat}
+            title="Nova consulta"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
           </button>
         </div>
 
-        <button className="new-chat-btn" onClick={newChat}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Nova conversa
-        </button>
-
-        <div className="history-list">
-          {historyItems.length === 0
-            ? <div className="history-empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span>Nenhuma conversa ainda</span>
-              </div>
-            : historyItems.map(item => (
-                <div key={item.id} className={`history-item${item.active ? ' active' : ''}`} onClick={() => selectHistory(item)}>
-                  <div className="history-item-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  </div>
-                  <span className="history-item-text">{item.title?.slice(0,34)}{(item.title?.length||0) > 34 ? '…' : ''}</span>
-                </div>
-              ))
-          }
+        <div className="agro-sidebar-cta">
+          <button className="agro-btn agro-btn-primary agro-btn-block" onClick={newChat}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nova consulta técnica
+          </button>
         </div>
 
-        {/* User menu popup */}
-        <div className={`user-menu-popup${userMenuOpen ? ' open' : ''}`}>
-          <div className="menu-item" onClick={openEditModal}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Editar perfil
-          </div>
-          <div className="menu-item" onClick={() => { setUserMenuOpen(false); setSettingsOpen(true); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Configurações
-          </div>
-          <div className="menu-item" onClick={() => { setUserMenuOpen(false); newChat(); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Nova conversa
-          </div>
-          <div className="menu-sep"/>
-          <div className="menu-item danger" onClick={logout}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Trocar conta
-          </div>
-        </div>
-
-        <div className="sidebar-footer">
-          <div className="user-info" onClick={() => setUserMenuOpen(o => !o)}>
-            <div className="user-avatar">{uIni}</div>
-            <div className="user-details">
-              <div className="user-name-el">{(user?.name || '').toUpperCase()}</div>
-              <div className="user-plan-el">{(user?.plan || 'AGRONOMIA IA').toUpperCase()}</div>
+        <div className="agro-sidebar-history">
+          <div className="agro-history-heading">Histórico de consultas</div>
+          {historyItems.length === 0 ? (
+            <div className="agro-history-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Nenhum atendimento salvo</span>
             </div>
-            <button className="user-menu-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-            </button>
+          ) : (
+            historyItems.map((item) => (
+              <button
+                key={item.id}
+                className={`agro-history-row${item.active ? ' is-active' : ''}`}
+                onClick={() => selectHistory(item)}
+              >
+                <span className="agro-history-title">{item.title}</span>
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* Menu do usuário logado */}
+        <div className="agro-sidebar-foot">
+          {userMenuOpen && (
+            <div className="agro-user-popover">
+              <button className="agro-pop-item" onClick={openEditModal}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Editar perfil técnico
+              </button>
+              <button
+                className="agro-pop-item"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  setSettingsOpen(true);
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                Configurações da IA
+              </button>
+              <div className="agro-pop-divider" />
+              <button className="agro-pop-item is-danger" onClick={logout}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Encerrar sessão
+              </button>
+            </div>
+          )}
+
+          <div className="agro-user-bar" onClick={() => setUserMenuOpen((o) => !o)}>
+            <div className="agro-user-badge">{uIni}</div>
+            <div className="agro-user-meta">
+              <span className="agro-user-name">{user?.name || 'Profissional'}</span>
+              <span className="agro-user-role">{user?.plan || 'Agronomia IA'}</span>
+            </div>
+            <span className="agro-user-more">•••</span>
           </div>
         </div>
       </aside>
 
-      {/* ══ MAIN ══ */}
-      <main className="chat-main" onClick={() => { if(userMenuOpen) setUserMenuOpen(false); if(exportOpen) setExportOpen(false); }}>
-        {/* Topbar */}
-        <div className="topbar">
-          <div className="topbar-left">
-            <button className="sidebar-toggle" onClick={e => { e.stopPropagation(); setSidebarOpen(o => !o); }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      {/* ══ CORPO PRINCIPAL DO CHAT ══ */}
+      <main
+        className="agro-chat-stage"
+        onClick={() => {
+          if (userMenuOpen) setUserMenuOpen(false);
+          if (exportOpen) setExportOpen(false);
+        }}
+      >
+        {/* Barra superior de controle */}
+        <header className="agro-chat-topbar">
+          <div className="agro-topbar-start">
+            <button
+              className="agro-icon-btn agro-toggle-sidebar"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSidebarOpen((o) => !o);
+              }}
+              title="Alternar menu lateral"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12h18M3 6h18M3 18h18" />
+              </svg>
             </button>
-            <span className="topbar-title">AGROBOT</span>
-            <span className="topbar-badge">IA AGRÍCOLA</span>
-          </div>
-          <div className="topbar-right">
-            <div className="topbar-btn-wrap">
-              <button className="topbar-btn" title="Compartilhar conversa" onClick={e => { e.stopPropagation(); setExportOpen(o => !o); }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              </button>
-              <div className={`export-panel${exportOpen ? ' open' : ''}`} onClick={e => e.stopPropagation()}>
-                <div className="menu-item" onClick={() => exportChat('txt')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Exportar .txt</div>
-                <div className="menu-item" onClick={() => exportChat('md')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Exportar .md</div>
-                <div className="menu-sep"/>
-                <div className="menu-item" onClick={copyAllChat}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar conversa</div>
-              </div>
+            <div className="agro-topbar-session">
+              <span className="agro-session-name">AgroBot · Assistente Agronômico</span>
+              <span className="agro-session-tag">Modo Campo Ativo</span>
             </div>
-            <button className="topbar-btn" title="Download da conversa" onClick={() => exportChat('txt')}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </button>
-            <button className="topbar-btn" title="Configurações" onClick={() => setSettingsOpen(true)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+
+          <div className="agro-topbar-end">
+            <div className="agro-export-anchor">
+              <button
+                className="agro-btn agro-btn-outline agro-btn-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExportOpen((o) => !o);
+                }}
+              >
+                Exportar registro
+              </button>
+              {exportOpen && (
+                <div className="agro-export-menu" onClick={(e) => e.stopPropagation()}>
+                  <button className="agro-pop-item" onClick={() => exportChat('txt')}>
+                    Baixar relatório (.txt)
+                  </button>
+                  <button className="agro-pop-item" onClick={() => exportChat('md')}>
+                    Baixar relatório (.md)
+                  </button>
+                  <button className="agro-pop-item" onClick={copyAllChat}>
+                    Copiar texto integral
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              className="agro-icon-btn"
+              onClick={() => setSettingsOpen(true)}
+              title="Configurações técnicas"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Chat area */}
-        <div className="chat-area" ref={chatAreaRef}>
-          <div className="messages-wrap">
+        {/* Área de mensagens */}
+        <div className="agro-messages-stage" ref={chatAreaRef}>
+          <div className="agro-messages-wrapper">
             {showWelcome && (
-              <div className="welcome">
-                <div className="welcome-icon">{PLANT_SVG}</div>
-                <h1>Por onde começamos, <span className="hl">{user?.name || ''}!</span></h1>
-                <p>Sou o AgroBot, seu assistente de agronomia com IA. Descreva seu problema de campo e receba diagnóstico técnico imediato.</p>
-                <div className="suggestions">
+              <div className="agro-welcome-block">
+                <div className="agro-welcome-emblem">{PLANT_SVG}</div>
+                <h1 className="agro-welcome-title">
+                  Olá, {user?.name ? user.name.split(' ')[0] : 'colega agrônomo'}.
+                </h1>
+                <p className="agro-welcome-desc">
+                  Qual demanda de campo vamos analisar hoje? Você pode detalhar uma ocorrência no talhão, enviar laudos químicos de solo ou anexar fotos para inspeção fitossanitária.
+                </p>
+
+                <div className="agro-prompt-suggestions">
                   {[
-                    {label:'Solo', text:'Minha lavoura tem pH ácido, como corrigir?'},
-                    {label:'Pragas', text:'Estou vendo manchas nas folhas da soja, o que pode ser?'},
-                    {label:'Irrigação', text:'Qual a frequência ideal de irrigação para o tomate?'},
-                    {label:'Fertilização', text:'Quais nutrientes preciso aplicar no plantio do milho?'},
-                  ].map(s => (
-                    <button key={s.label} className="suggestion" onClick={() => { setInputVal(s.text); setCharCount(s.text.length); textareaRef.current?.focus(); }}>
-                      <div className="suggestion-label">{s.label}</div>
-                      <div className="suggestion-text">{s.text}</div>
+                    {
+                      label: 'Análise de solo',
+                      text: 'Interpretar laudo de solo: pH em CaCl2 de 5.1, V% de 44% e CTC de 10.4 cmolc/dm³. Qual a necessidade de calagem para soja?',
+                    },
+                    {
+                      label: 'Fitossanidade',
+                      text: 'Identifiquei sintomas de manchas circulares com halo amarelado em milho safrinha no estádio V8. Quais as hipóteses?',
+                    },
+                    {
+                      label: 'Manejo hídrico',
+                      text: 'Qual a recomendação de turno de rega e lâmina líquida para pivô central em fase reprodutiva de feijão?',
+                    },
+                    {
+                      label: 'Adubação de cobertura',
+                      text: 'Cálculo de adubação de cobertura nitrogenada e potássica no milho para meta de produtividade de 140 sc/ha.',
+                    },
+                  ].map((s) => (
+                    <button
+                      key={s.label}
+                      className="agro-prompt-card"
+                      onClick={() => {
+                        setInputVal(s.text);
+                        setCharCount(s.text.length);
+                        textareaRef.current?.focus();
+                      }}
+                    >
+                      <span className="agro-prompt-label">{s.label}</span>
+                      <span className="agro-prompt-text">{s.text}</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {messages.map(msg => (
-              <div key={msg.id} className="message">
-                <div className={`msg-avatar ${msg.role === 'user' ? 'user' : 'bot'}`}>
+            {messages.map((msg) => (
+              <div key={msg.id} className={`agro-bubble-row ${msg.role}`}>
+                <div className={`agro-bubble-avatar ${msg.role}`}>
                   {msg.role === 'user' ? uIni : PLANT_SVG}
                 </div>
-                <div className="msg-body">
-                  <div className={`msg-name${msg.role === 'assistant' ? ' bot-name' : ''}`}>
+                <div className="agro-bubble-content">
+                  <div className="agro-bubble-sender">
                     {msg.role === 'user' ? (user?.name || 'Você') : 'AgroBot'}
                   </div>
-                  <div className="msg-text" dangerouslySetInnerHTML={{ __html: msg.html }} />
-                  {msg.files?.map((f, i) => f.type?.startsWith('image/')
-                    ? <img key={i} src={f.data} className="msg-img" alt={f.name} />
-                    : <div key={i} className="msg-file-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{f.name}</div>
+
+                  <div
+                    className="agro-bubble-text"
+                    dangerouslySetInnerHTML={{ __html: msg.html }}
+                  />
+
+                  {msg.files?.length > 0 && (
+                    <div className="agro-bubble-attachments">
+                      {msg.files.map((f, i) =>
+                        f.type?.startsWith('image/') ? (
+                          <img key={i} src={f.data} className="agro-attach-img" alt={f.name} />
+                        ) : (
+                          <div key={i} className="agro-attach-chip">
+                            <span>📄</span>
+                            <span>{f.name}</span>
+                          </div>
+                        )
+                      )}
+                    </div>
                   )}
-                  {msg.role === 'assistant' && !msg.streaming && (
-                    <>
-                      <div className="msg-actions">
-                        <button className="msg-action" onClick={() => copyMsg(msg.text)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
-                        </button>
-                      </div>
-                      <div className="doc-action-bar">
-                        <button className="doc-btn pdf" onClick={() => generatePDF('Resposta AgroBot', msg.text)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>Baixar PDF
-                        </button>
-                        <button className="doc-btn word" onClick={() => generateWord('Resposta AgroBot', msg.text)}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Baixar Word
-                        </button>
-                      </div>
-                    </>
+
+                  {msg.role === 'assistant' && (
+                    <div className="agro-bubble-toolbar">
+                      <button
+                        className="agro-tool-btn"
+                        onClick={() => copyMsg(msg.text)}
+                      >
+                        Copiar texto
+                      </button>
+                      <button
+                        className="agro-tool-btn is-action"
+                        onClick={() => generatePDF('Laudo Técnico AgroBot', msg.text)}
+                      >
+                        Gerar Laudo PDF
+                      </button>
+                      <button
+                        className="agro-tool-btn is-action"
+                        onClick={() => generateWord('Laudo Técnico AgroBot', msg.text)}
+                      >
+                        Baixar Word (.doc)
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
             ))}
 
             {isTyping && (
-              <div className="message">
-                <div className="msg-avatar bot">{PLANT_SVG}</div>
-                <div className="msg-body">
-                  <div className="msg-name bot-name">AgroBot</div>
-                  <div className="typing"><div className="typing-dot"/><div className="typing-dot"/><div className="typing-dot"/></div>
+              <div className="agro-bubble-row assistant">
+                <div className="agro-bubble-avatar assistant">{PLANT_SVG}</div>
+                <div className="agro-bubble-content">
+                  <div className="agro-bubble-sender">AgroBot</div>
+                  <div className="agro-typing-indicator">
+                    <span className="dot" />
+                    <span className="dot" />
+                    <span className="dot" />
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* File preview */}
+        {/* Pré-visualização de anexos pendentes */}
         {pendingFiles.length > 0 && (
-          <div className="file-preview-bar">
+          <div className="agro-pending-bar">
             {pendingFiles.map((f, i) => (
-              <div key={i} className="file-chip">
-                {f.type?.startsWith('image/') && <img src={f.data} className="file-chip-img" alt="" />}
-                <span className="file-chip-name">{f.name}</span>
-                <button className="file-chip-rm" onClick={() => setPendingFiles(prev => prev.filter((_,j) => j!==i))}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              <div key={i} className="agro-pending-chip">
+                {f.type?.startsWith('image/') && (
+                  <img src={f.data} className="thumb" alt="" />
+                )}
+                <span className="name">{f.name}</span>
+                <button
+                  className="remove"
+                  onClick={() =>
+                    setPendingFiles((prev) => prev.filter((_, j) => j !== i))
+                  }
+                >
+                  ✕
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Input area */}
-        <div className="input-area">
-          <div className="input-wrap">
-            <div className="input-row">
-              <textarea
-                ref={textareaRef}
-                className="chat-input"
-                placeholder="Descreva seu problema agrícola..."
-                rows={1}
-                value={inputVal}
-                onKeyDown={handleKey}
-                onChange={handleInput}
+        {/* Caixa de Entrada de Texto */}
+        <div className="agro-composer-dock">
+          <div className="agro-composer-box">
+            <textarea
+              ref={textareaRef}
+              className="agro-composer-input"
+              placeholder="Descreva a ocorrência no talhão ou cole parâmetros de análise..."
+              rows={1}
+              value={inputVal}
+              onKeyDown={handleKey}
+              onChange={handleInput}
+            />
+
+            <div className="agro-composer-actions">
+              <button
+                className={`agro-icon-btn agro-btn-attach${pendingFiles.length > 0 ? ' has-files' : ''}`}
+                title="Anexar foto do campo ou laudo laboratorial"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="18" height="18">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                multiple
+                accept="image/*,.pdf,.txt,.csv,.xlsx,.doc,.docx"
+                onChange={handleFiles}
               />
-              <div className="input-actions">
-                <button className={`input-btn${pendingFiles.length > 0 ? ' has-files' : ''}`} title="Anexar foto ou arquivo" onClick={() => fileInputRef.current?.click()}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                </button>
-                <input ref={fileInputRef} type="file" style={{display:'none'}} multiple accept="image/*,.pdf,.txt,.csv,.xlsx,.doc,.docx" onChange={handleFiles} />
-                <button className="send-btn" onClick={sendMessage} disabled={!canSend}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-                </button>
-              </div>
+
+              <button
+                className="agro-btn agro-btn-primary agro-btn-send"
+                onClick={sendMessage}
+                disabled={!canSend}
+                title="Enviar consulta técnica"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="16" height="16">
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2L15 22 11 13 2 9l20-7z" />
+                </svg>
+              </button>
             </div>
           </div>
-          <div className="input-extras">
-            <span className="input-hint">Enter para enviar &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> nova linha</span>
-            <span className="char-count">{charCount > 0 ? `${charCount} chars` : ''}</span>
+
+          <div className="agro-composer-hint">
+            <span>Pressione <kbd>Enter</kbd> para enviar · <kbd>Shift + Enter</kbd> para quebra de linha</span>
+            {charCount > 0 && <span>{charCount} caracteres</span>}
           </div>
         </div>
       </main>
 
-      {/* ══ EDIT PROFILE MODAL ══ */}
-      <div className={`chat-modal-overlay${editModalOpen ? ' open' : ''}`}>
-        <div className="chat-modal">
-          <h2>Editar perfil</h2>
-          <p>Atualize suas informações.</p>
-          <div className="chat-modal-field">
-            <label>Nome</label>
-            <input type="text" value={editName} onChange={e => setEditName(e.target.value)} maxLength={30} onKeyDown={e => e.key==='Enter' && updateUser()} />
-          </div>
-          <div className="chat-modal-field">
-            <label>Perfil</label>
-            <input type="text" value={editPlan} onChange={e => setEditPlan(e.target.value)} maxLength={40} />
-          </div>
-          <div className="modal-btns">
-            <button className="modal-btn secondary" onClick={() => setEditModalOpen(false)}>Cancelar</button>
-            <button className="modal-btn primary" onClick={updateUser}>Salvar</button>
+      {/* ══ MODAL DE EDIÇÃO DE PERFIL ══ */}
+      {editModalOpen && (
+        <div className="agro-modal-backdrop is-visible">
+          <div className="agro-auth-dialog">
+            <h2 className="agro-dialog-title">Atualizar cadastro profissional</h2>
+            <p className="agro-dialog-sub">Mantenha seus dados atualizados para a emissão dos laudos.</p>
+
+            <div className="agro-form-stack" style={{ marginTop: 16 }}>
+              <div className="agro-field">
+                <label className="agro-label">Nome completo</label>
+                <input
+                  className="agro-input"
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  maxLength={40}
+                />
+              </div>
+
+              <div className="agro-field">
+                <label className="agro-label">Atuação ou qualificação</label>
+                <input
+                  className="agro-input"
+                  type="text"
+                  value={editPlan}
+                  onChange={(e) => setEditPlan(e.target.value)}
+                  placeholder="Ex: Engenheiro Agrônomo · CREA-SP"
+                />
+              </div>
+
+              <div className="agro-dialog-actions" style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button
+                  className="agro-btn agro-btn-outline"
+                  onClick={() => setEditModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button className="agro-btn agro-btn-primary" onClick={updateUser}>
+                  Salvar dados
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ══ SETTINGS PANEL ══ */}
-      <div className={`settings-panel${settingsOpen ? ' open' : ''}`}>
-        <div className="settings-backdrop" onClick={() => setSettingsOpen(false)} />
-        <div className="settings-box">
-          <div className="settings-header">
-            <h2>Configurações</h2>
-            <button className="settings-close" onClick={() => setSettingsOpen(false)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
+      {/* ══ PAINEL DE CONFIGURAÇÕES ══ */}
+      {settingsOpen && (
+        <div className="agro-modal-backdrop is-visible">
+          <div className="agro-auth-dialog">
+            <div className="agro-dialog-header">
+              <h2 className="agro-dialog-title">Configurações do Assistente</h2>
+              <p className="agro-dialog-sub">Ajuste o comportamento do modelo e a extensão das respostas.</p>
+            </div>
+
+            <div className="agro-form-stack" style={{ marginTop: 16 }}>
+              <div className="agro-field">
+                <label className="agro-label">Extensão máxima de resposta (tokens)</label>
+                <input
+                  type="number"
+                  className="agro-input"
+                  value={settings.tokens}
+                  min={300}
+                  max={4000}
+                  step={100}
+                  onChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      tokens: parseInt(e.target.value) || 1200,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="agro-field">
+                <label className="agro-label">Idioma técnico preferencial</label>
+                <select
+                  className="agro-input"
+                  value={settings.lang}
+                  onChange={(e) =>
+                    setSettings((s) => ({ ...s, lang: e.target.value }))
+                  }
+                >
+                  <option value="pt-BR">Português (Brasil)</option>
+                  <option value="en">Inglês (English)</option>
+                  <option value="es">Espanhol (Español)</option>
+                </select>
+              </div>
+
+              <div className="agro-dialog-actions" style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button
+                  className="agro-btn agro-btn-outline"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  Fechar
+                </button>
+                <button className="agro-btn agro-btn-primary" onClick={saveSettings}>
+                  Salvar preferências
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="settings-section">
-            <h3>Aparência</h3>
-            <div className="settings-row">
-              <div className="settings-label">Modo compacto <small>Menos espaço entre mensagens</small></div>
-              <div className={`toggle${settings.compact ? ' on' : ''}`} onClick={() => setSettings(s => ({...s, compact: !s.compact}))} />
-            </div>
-            <div className="settings-row">
-              <div className="settings-label">Animações <small>Efeitos de entrada das mensagens</small></div>
-              <div className={`toggle${settings.anim ? ' on' : ''}`} onClick={() => setSettings(s => ({...s, anim: !s.anim}))} />
-            </div>
-          </div>
-          <div className="settings-section">
-            <h3>Conversa</h3>
-            <div className="settings-row">
-              <div className="settings-label">Idioma das respostas <small>Idioma padrão do AgroBot</small></div>
-              <select className="settings-select" value={settings.lang} onChange={e => setSettings(s => ({...s, lang: e.target.value}))}>
-                <option value="pt-BR">Português BR</option>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
-            </div>
-            <div className="settings-row">
-              <div className="settings-label">Máx. tokens <small>Tamanho máximo da resposta</small></div>
-              <input type="number" className="settings-input-n" value={settings.tokens} min={200} max={4000} step={100} onChange={e => setSettings(s => ({...s, tokens: parseInt(e.target.value)||1000}))} />
-            </div>
-          </div>
-          <div className="settings-section">
-            <h3>Dados</h3>
-            <div className="settings-row">
-              <div className="settings-label">Limpar histórico <small>Remove conversas da lista</small></div>
-              <button className="settings-danger-btn" onClick={() => { setHistoryItems([]); setSettingsOpen(false); }}>Limpar</button>
-            </div>
-          </div>
-          <button className="settings-save-btn" onClick={saveSettings}>Salvar configurações</button>
         </div>
-      </div>
+      )}
 
-      {/* ══ TOAST ══ */}
-      <div className={`agro-toast${toastVisible ? ' show' : ''}`}>{toast}</div>
+      {/* ══ NOTIFICAÇÃO TOAST ══ */}
+      <div className={`agro-toast${toastVisible ? ' is-visible' : ''}`}>{toast}</div>
     </div>
   );
 }

@@ -62,8 +62,21 @@ CREATE TABLE IF NOT EXISTS users (
     google_sub    TEXT,
     picture       TEXT,
     plan          TEXT DEFAULT 'free',
+    email_verified BOOLEAN DEFAULT FALSE,
     created_at    TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Adiciona a coluna email_verified caso a tabela já exista sem ela
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='users' AND column_name='email_verified'
+    ) THEN
+        ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
+    END IF;
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS conversations (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -88,9 +101,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
-CREATE INDEX IF NOT EXISTS idx_messages_conv      ON messages(conversation_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_token     ON sessions(token);
+-- Tabela de códigos de verificação de email
+CREATE TABLE IF NOT EXISTS email_verifications (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used       BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_user   ON conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conv        ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token       ON sessions(token);
+CREATE INDEX IF NOT EXISTS idx_email_verif_email    ON email_verifications(email);
 """
 
 

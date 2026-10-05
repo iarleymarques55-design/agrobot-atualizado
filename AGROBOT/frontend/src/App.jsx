@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Chat from './pages/Chat';
+import Privacy from './pages/Privacy';
 
 function PrivateRoute({ children }) {
   const token = sessionStorage.getItem('agro_token');
@@ -12,6 +13,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/privacidade" element={<Privacy />} />
         <Route
           path="/chat"
           element={

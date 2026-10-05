@@ -24,11 +24,28 @@ GROQ_BASE_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
 
 # ── Schema ───────────────────────────────────────────────────
+_MAX_MESSAGES = 40       # janela de contexto m\u00e1xima
+_MAX_CONTENT_CHARS = 8000  # por mensagem (anti-spam / DoS)
+_MAX_SYSTEM_CHARS = 4000
+
 class ChatBody(BaseModel):
     messages: list[dict[str, Any]]
     system: str | None = None
     max_tokens: int = 1500
     stream: bool = True
+
+    def validated(self) -> "ChatBody":
+        """Aplica limites de tamanho e sanitiza o payload."""
+        if len(self.messages) > _MAX_MESSAGES:
+            self.messages = self.messages[-_MAX_MESSAGES:]
+        for m in self.messages:
+            c = m.get("content", "")
+            if isinstance(c, str) and len(c) > _MAX_CONTENT_CHARS:
+                m["content"] = c[:_MAX_CONTENT_CHARS]
+        if self.system and len(self.system) > _MAX_SYSTEM_CHARS:
+            self.system = self.system[:_MAX_SYSTEM_CHARS]
+        self.max_tokens = min(max(self.max_tokens, 200), 2000)
+        return self
 
 
 def _convert_parts(parts: list) -> list:
@@ -146,8 +163,9 @@ async def _stream_groq(groq_payload: dict):
 @router.post("/chat")
 async def chat(body: ChatBody, user_id: str = Depends(require_auth)):
     if not GROQ_API_KEY:
-        raise HTTPException(500, "GROQ_API_KEY não configurada no servidor.")
+        raise HTTPException(500, "GROQ_API_KEY n\u00e3o configurada no servidor.")
 
+    body = body.validated()  # aplica limites de tamanho e sanitiza
     messages, has_images = _build_groq_messages(body)
     model = GROQ_MODEL_VISION if has_images else GROQ_MODEL_TEXT
 
