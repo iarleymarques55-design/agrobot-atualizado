@@ -468,7 +468,7 @@ export default function Landing() {
           <div className="agro-hero-col-text">
             <div className="agro-status-flag">
               <span className="agro-flag-indicator" />
-              <span>Suporte técnico para safra 2025/2026</span>
+              <span>Suporte técnico para safra 2026/2027</span>
             </div>
 
             <h1 className="agro-hero-heading">
@@ -864,7 +864,7 @@ export default function Landing() {
 
           <div className="agro-footer-baseline">
             <div className="agro-footer-copyright">
-              © 2026 AgroBot. Desenvolvido para a agricultura brasileira.
+              © 2026/2027 AgroBot. Desenvolvido para a agricultura brasileira.
             </div>
             <div className="agro-footer-legal">
               As recomendações servem como auxílio à tomada de decisão e não dispensam vistoria presencial.

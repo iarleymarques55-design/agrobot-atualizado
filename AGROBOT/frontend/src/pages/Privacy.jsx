@@ -65,7 +65,7 @@ export default function Privacy() {
           <div className="agro-privacy-head">
             <span className="agro-section-category">Segurança e transparência</span>
             <h1 className="agro-section-title">Política de Privacidade e Proteção de Dados</h1>
-            <p className="agro-privacy-date">Vigência: Safra 2025/2026 · Versão 1.2 · Em conformidade com a LGPD</p>
+            <p className="agro-privacy-date">Vigência: Safra 2026/2027 · Versão 1.2 · Em conformidade com a LGPD</p>
           </div>
 
           <div className="agro-article-body">
