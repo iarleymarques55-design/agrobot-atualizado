@@ -9,64 +9,72 @@
 
 :root {
   /* Solos e Superfícies */
-  --canvas: #F8FAF6;
-  --canvas-subtle: #EEF2EC;
+  --canvas: #FAFBF9;
+  --canvas-subtle: #F2F5F0;
   --surface: #FFFFFF;
   --surface-raised: #FFFFFF;
-  --surface-tint: #F2F6F0;
-  --surface-border: #DCE3D8;
-  --surface-border-subtle: #E6ECE2;
+  --surface-tint: #F1F6EF;
+  --surface-border: #DFE5DA;
+  --surface-border-subtle: #E9EFE6;
+  --surface-rule: #DFE5DA;
 
   /* Pigmentos Botânicos e Clorofila */
-  --forest-950: #101913;
-  --forest-900: #15241C;
-  --forest-800: #1C3328;
-  --forest-700: #234233;
+  --forest-950: #121F17;
+  --forest-900: #182C21;
+  --forest-800: #22382B;
+  --forest-700: #294636;
   --flora-800: #174A2C;
-  --flora-700: #1F5E39;
-  --flora-600: #277949;
+  --flora-700: #1E5E3A;
+  --flora-600: #257347;
   --flora-500: #2E8B57;
-  --flora-100: #E4F0E8;
-  --flora-50: #F1F7F3;
+  --flora-100: #E6EFE8;
+  --flora-50: #F3F8F4;
 
   /* Indicadores e Alertas Técnicos */
-  --wheat-700: #9B5610;
-  --wheat-600: #B86B12;
-  --wheat-500: #C97A1E;
-  --wheat-100: #FBF0DF;
-  --wheat-50: #FEF9F0;
+  --wheat-700: #8E4E10;
+  --wheat-600: #A85E14;
+  --wheat-500: #C27218;
+  --wheat-100: #FAF2E6;
+  --wheat-50: #FCF8F2;
 
   --rust-700: #8E2B20;
   --rust-600: #A8382B;
-  --rust-100: #FDE8E6;
+  --rust-100: #FCEBEA;
 
   /* Escala Tipográfica de Texto */
-  --text-primary: #121A15;
+  --text-primary: #121F17;
   --text-secondary: #48574C;
-  --text-tertiary: #6C7D70;
-  --text-inverse: #F8FAF6;
+  --text-tertiary: #6E7E72;
+  --text-inverse: #FAFBF9;
 
   /* Famílias Tipográficas */
-  --font-heading: 'Epilogue', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Geometria e Sombras Estruturadas */
+  /* Fontes específicas do Chat */
+  --font-chat-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-chat-body: 'Source Sans 3', system-ui, sans-serif;
+
+  /* Geometria e Relações Estruturais */
+  --radius-xs: 3px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --radius-xl: 20px;
 
-  --shadow-sm: 0 1px 3px rgba(18, 26, 21, 0.04), 0 1px 2px rgba(18, 26, 21, 0.02);
-  --shadow-card: 0 4px 16px -2px rgba(18, 26, 21, 0.05), 0 2px 6px -1px rgba(18, 26, 21, 0.03);
-  --shadow-elevated: 0 12px 32px -4px rgba(18, 26, 21, 0.08), 0 4px 12px -2px rgba(18, 26, 21, 0.04);
+  /* Sombras Reduzidas e Disciplinadas */
+  --shadow-sm: 0 1px 2px rgba(18, 31, 23, 0.04);
+  --shadow-card: 0 2px 8px rgba(18, 31, 23, 0.04);
+  --shadow-elevated: 0 12px 30px -4px rgba(18, 31, 23, 0.08);
 
   --max-w-content: 1180px;
   --max-w-narrow: 840px;
 }
 
 /* ── Reset e Base ── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -86,7 +94,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
@@ -390,137 +401,136 @@ a {
   background-color: var(--surface-border);
 }
 
-/* ── Hero Dossier Card (Lado Direito) ── */
-.agro-dossier-card {
-  background: var(--surface);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-elevated);
-  padding: 24px;
+/* ── Hero Fieldlog (Registro Técnico de Campo) ── */
+.agro-fieldlog {
+  background: #FFFFFF;
+  border: 1px solid #D5DDD0;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 16px 36px -6px rgba(18, 26, 21, 0.08), 0 4px 12px rgba(18, 26, 21, 0.04);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.agro-fieldlog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--forest-900);
+}
+
+.agro-fieldlog-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agro-fieldlog-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--flora-800);
+  background: var(--flora-100);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.agro-fieldlog-target {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--forest-950);
+}
+
+.agro-fieldlog-phase {
+  font-size: 11.5px;
+  color: var(--wheat-700);
+  font-weight: 600;
+}
+
+.agro-fieldlog-entries {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.agro-dossier-topbar {
+.agro-fieldlog-entry {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--surface-border-subtle);
+  flex-direction: column;
+  gap: 6px;
 }
 
-.agro-dossier-id {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.agro-dossier-chip {
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--flora-100);
-  color: var(--flora-800);
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-}
-
-.agro-dossier-talhao {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.agro-dossier-state {
+.agro-fieldlog-speaker {
   font-size: 11.5px;
-  color: var(--wheat-600);
-  font-weight: 500;
+  font-weight: 700;
+  color: var(--forest-900);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.01em;
 }
 
-.agro-dossier-query,
-.agro-dossier-response {
+.agro-fieldlog-speaker-icon {
   display: flex;
+  align-items: center;
+}
+
+.agro-fieldlog-text {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  background: #F7FAF5;
+  border: 1px solid #E2EADF;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.agro-fieldlog-time {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-left: 2px;
+}
+
+.agro-fieldlog-entry.bot {
+  background: #FFFFFF;
+  border: 1px solid #E2EADF;
+  border-radius: var(--radius-sm);
+  padding: 16px;
   gap: 12px;
 }
 
-.agro-dossier-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
+.agro-diag-finding {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.agro-dossier-avatar.user {
-  background: var(--canvas-subtle);
-  color: var(--text-secondary);
-}
-
-.agro-dossier-avatar.bot {
-  background: var(--flora-50);
-  border: 1px solid var(--flora-700);
-}
-
-.agro-dossier-bubble {
-  flex: 1;
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-
-.agro-dossier-bubble.user {
-  background: var(--canvas-subtle);
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-}
-
-.agro-dossier-time {
-  display: block;
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-top: 6px;
-}
-
-.agro-dossier-bubble.bot {
-  background: var(--surface);
-  border: 1px solid var(--surface-border-subtle);
-  padding: 14px;
-  border-radius: var(--radius-md);
-}
-
-.agro-diag-header {
-  margin-bottom: 12px;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--surface-border-subtle);
+  padding-bottom: 8px;
 }
 
 .agro-diag-title {
-  display: block;
   font-family: var(--font-heading);
+  font-size: 17px;
   font-weight: 700;
-  font-size: 14px;
   color: var(--forest-950);
 }
 
 .agro-diag-pathogen {
   font-style: italic;
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 12.5px;
+  color: var(--rust-700);
 }
 
-.agro-metric-strip {
+.agro-metric-ledger {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  background: var(--canvas);
-  padding: 10px;
+  background: #F7FAF5;
+  border: 1px solid #E2EADF;
   border-radius: var(--radius-sm);
-  margin-bottom: 12px;
+  padding: 10px;
 }
 
-.agro-metric {
+.agro-metric-row {
   display: flex;
   flex-direction: column;
 }
@@ -532,67 +542,63 @@ a {
 
 .agro-metric-v {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   margin-top: 2px;
 }
 
 .agro-metric-v.warn {
-  color: var(--wheat-600);
+  color: var(--wheat-700);
 }
 
 .agro-metric-v.alert {
-  color: var(--rust-600);
+  color: var(--rust-700);
 }
 
 .agro-metric-v.success {
   color: var(--flora-700);
 }
 
-.agro-diag-recom {
+.agro-diag-prescrip {
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--text-secondary);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.agro-recom-line strong {
-  color: var(--text-primary);
+.agro-diag-prescrip strong {
+  color: var(--forest-950);
 }
 
-.agro-dossier-action-row {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--surface-border-subtle);
+.agro-fieldlog-action {
+  padding-top: 6px;
 }
 
-.agro-doc-pill {
-  width: 100%;
-  display: flex;
+.agro-btn-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 12px;
-  background: var(--forest-900);
-  color: #FFFFFF;
-  font-size: 12.5px;
-  font-weight: 600;
+  background: none;
   border: none;
-  border-radius: var(--radius-sm);
+  color: var(--flora-700);
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease;
+  padding: 0;
+  transition: color 0.15s ease;
 }
 
-.agro-doc-pill:hover {
-  background: var(--flora-700);
+.agro-btn-link:hover {
+  color: var(--flora-600);
+  text-decoration: underline;
 }
 
-.agro-dossier-footer {
+.agro-fieldlog-foot {
   font-size: 11px;
   color: var(--text-tertiary);
   text-align: center;
-  padding-top: 4px;
+  border-top: 1px solid var(--surface-border-subtle);
+  padding-top: 10px;
 }
 
 @media (max-width: 960px) {
@@ -793,6 +799,7 @@ a {
   .agro-modules-grid {
     grid-template-columns: 1fr;
   }
+
   .agro-card-featured {
     grid-column: span 1;
     grid-template-columns: 1fr;
@@ -1398,6 +1405,25 @@ a {
   width: 100vw;
   overflow: hidden;
   background-color: var(--canvas);
+  font-family: var(--font-chat-body);
+}
+
+.agro-chat-viewport button,
+.agro-chat-viewport input,
+.agro-chat-viewport select,
+.agro-chat-viewport textarea {
+  font-family: var(--font-chat-body);
+}
+
+.agro-chat-viewport h1,
+.agro-chat-viewport h2,
+.agro-chat-viewport h3,
+.agro-chat-viewport h4,
+.agro-chat-viewport h5,
+.agro-chat-viewport h6,
+.agro-chat-viewport .agro-brand-name,
+.agro-chat-viewport .agro-dialog-title {
+  font-family: var(--font-chat-heading);
 }
 
 .agro-chat-sidebar {
@@ -1433,8 +1459,9 @@ a {
 }
 
 .agro-history-heading {
+  font-family: var(--font-chat-heading);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-tertiary);
   padding: 4px 8px 8px;
 }
@@ -1634,7 +1661,7 @@ a {
 }
 
 .agro-session-name {
-  font-family: var(--font-heading);
+  font-family: var(--font-chat-heading);
   font-weight: 700;
   font-size: 15px;
   color: var(--forest-950);
@@ -1711,7 +1738,7 @@ a {
 }
 
 .agro-welcome-title {
-  font-family: var(--font-heading);
+  font-family: var(--font-chat-heading);
   font-size: 26px;
   font-weight: 800;
   color: var(--forest-950);
@@ -1732,7 +1759,8 @@ a {
   text-align: left;
 }
 
-.agro-prompt-card {
+.agro-prompt-card,
+.agro-prompt-item {
   background: var(--surface);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-md);
@@ -1742,17 +1770,21 @@ a {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  text-align: left;
+  font-family: var(--font-chat-body);
 }
 
-.agro-prompt-card:hover {
+.agro-prompt-card:hover,
+.agro-prompt-item:hover {
   border-color: var(--flora-600);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
 .agro-prompt-label {
+  font-family: var(--font-chat-heading);
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--flora-700);
 }
 
@@ -1806,8 +1838,9 @@ a {
 }
 
 .agro-bubble-sender {
+  font-family: var(--font-chat-heading);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-tertiary);
   margin-bottom: 4px;
 }
@@ -1843,7 +1876,7 @@ a {
 }
 
 .agro-chat-h2 {
-  font-family: var(--font-heading);
+  font-family: var(--font-chat-heading);
   font-size: 16px;
   font-weight: 700;
   color: var(--forest-950);
@@ -1853,7 +1886,7 @@ a {
 }
 
 .agro-chat-h3 {
-  font-family: var(--font-heading);
+  font-family: var(--font-chat-heading);
   font-size: 14px;
   font-weight: 700;
   color: var(--flora-700);
@@ -1961,10 +1994,14 @@ a {
 }
 
 @keyframes agroPulse {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0.6);
     opacity: 0.4;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;

@@ -847,7 +847,7 @@ export default function Chat() {
                   ].map((s) => (
                     <button
                       key={s.label}
-                      className="agro-prompt-card"
+                      className="agro-prompt-item"
                       onClick={() => {
                         setInputVal(s.text);
                         setCharCount(s.text.length);

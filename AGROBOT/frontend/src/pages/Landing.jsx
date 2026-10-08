@@ -3,111 +3,202 @@ import { useNavigate } from 'react-router-dom';
 
 const API = import.meta.env.VITE_API_URL || '';
 
-// Ícone do AgroBot (Broto botânico com corte geométrico de precisão)
+// ── Ícones Agronômicos e da Interface ──
 const AGRO_LOGO_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" style={{ width: 20, height: 20 }}>
+  <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
     <path
       d="M12 21V11"
-      stroke="#1F5E39"
-      strokeWidth="2.2"
+      stroke="#075E42"
+      strokeWidth="2.4"
       strokeLinecap="round"
     />
     <path
-      d="M12 11C12 11 7.5 9.8 5.5 5.5C5.5 5.5 10 3.8 13.5 7.5C13.5 7.5 15.2 9.2 12 11Z"
-      fill="#2E8B57"
-      fillOpacity="0.85"
-      stroke="#1F5E39"
+      d="M12 11C12 11 7.2 9.5 5 5C5 5 9.8 3.5 13.5 7.5C13.5 7.5 15.2 9.2 12 11Z"
+      fill="#087A50"
+      fillOpacity="0.88"
+      stroke="#075E42"
       strokeWidth="1.8"
       strokeLinejoin="round"
     />
     <path
-      d="M12 15.5C12 15.5 16 13.8 17.8 9.5C17.8 9.5 13.5 8.5 10.5 13C10.5 13 9.8 14.5 12 15.5Z"
+      d="M12 15C12 15 16.5 13.5 18 9C18 9 13.5 8 10.5 12.5C10.5 12.5 9.8 14 12 15Z"
       fill="#4CAF50"
-      fillOpacity="0.75"
-      stroke="#1F5E39"
+      fillOpacity="0.8"
+      stroke="#075E42"
       strokeWidth="1.8"
       strokeLinejoin="round"
     />
   </svg>
 );
 
-const DOMAIN_MODULES = [
-  {
-    id: 'solo',
-    title: 'Fertilidade e química do solo',
-    desc: 'Interpretação detalhada de laudos laboratoriais: cálculo de necessidade de calagem (NC), gessagem, saturação por bases (V%) e equilíbrio de cátions (Ca/Mg/K).',
-    detail: 'Metodologia SMP · Relação Ca:Mg · Teores de fósforo resina/mehlich',
-    badge: 'Química do solo',
-  },
+const IconSearch = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const IconPlus = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+const IconFlask = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 2v7.31L4.2 18.1A2 2 0 0 0 5.86 21h12.28a2 2 0 0 0 1.66-2.9L14 9.31V2" />
+    <line x1="8.5" y1="2" x2="15.5" y2="2" />
+    <path d="M7 16h10" />
+  </svg>
+);
+
+const IconSprout = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 20h10" />
+    <path d="M12 20v-8" />
+    <path d="M12 12a5 5 0 0 1 5-5c0 4-3 7-5 7" />
+    <path d="M12 12a5 5 0 0 0-5-5c0 4 3 7 5 7" />
+  </svg>
+);
+
+const IconWheat = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 22l10-10" />
+    <path d="M16 8l2-2a2 2 0 0 0-2.83-2.83l-2 2" />
+    <path d="M11.17 12.83l2-2a2 2 0 0 0-2.83-2.83l-2 2" />
+    <path d="M17.5 13.5l2-2a2 2 0 0 0-2.83-2.83l-2 2" />
+  </svg>
+);
+
+const IconShieldCheck = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <polyline points="9 12 11 14 15 10" />
+  </svg>
+);
+
+const IconDoc = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
+
+const IconDrop = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+  </svg>
+);
+
+const IconArrowRight = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
+
+const IconCamera = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
+const IconLayers = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </svg>
+);
+
+const IconMenu = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const IconClose = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+// ── Lista de Módulos Técnicos Reais (Seção 7 do Prompt) ──
+const TECHNICAL_MODULES = [
   {
     id: 'pragas',
-    title: 'Fitossanidade e manejo integrado',
-    desc: 'Identificação de patógenos, pragas e doenças foliares com recomendações de rotação de princípios ativos e controle químico, biológico e cultural.',
-    detail: 'MIP · Limiares de dano econômico · Fungicidas multissítios',
-    badge: 'Fitossanidade',
+    title: 'Diagnóstico de pragas e doenças',
+    desc: 'Identificação de pragas, doenças e sintomas com recomendações técnicas.',
+    image: '/images/leaf_disease.jpg',
+    badge: 'Análise de imagem',
+    icon: <IconSprout />,
+  },
+  {
+    id: 'solo',
+    title: 'Análise de solo',
+    desc: 'Interpretação de resultados laboratoriais e recomendações de correção do solo.',
+    image: '/images/soil_analysis.jpg',
+    badge: 'Química do solo',
+    icon: <IconFlask />,
+  },
+  {
+    id: 'insumos',
+    title: 'Recomendação de insumos',
+    desc: 'Orientação sobre insumos conforme a cultura, as condições e os dados disponíveis.',
+    image: '/images/crop_inputs.jpg',
+    badge: 'Nutrição e manejo',
+    icon: <IconWheat />,
   },
   {
     id: 'irrigacao',
-    title: 'Engenharia hídrica e irrigação',
-    desc: 'Dimensionamento de lâmina bruta e líquida, turno de rega e monitoramento da evapotranspiração (ETc) para pivôs, gotejamento e aspersão.',
-    detail: 'Balanço hídrico diário · Coeficiente de cultura (Kc) · Umidade do solo',
-    badge: 'Manejo hídrico',
+    title: 'Manejo de irrigação',
+    desc: 'Orientações para o uso eficiente da água e a produtividade agrícola.',
+    image: '/images/irrigation.jpg',
+    badge: 'Engenharia hídrica',
+    icon: <IconDrop />,
   },
   {
-    id: 'fertilizacao',
-    title: 'Nutrição vegetal e adubação',
-    desc: 'Planos nutricionais balanceados para adubação de base, cobertura e fertirrigação, respeitando a marcha de absorção e a produtividade esperada.',
-    detail: 'Exportação por tonelada colhida · Adubação foliar · Micronutrientes',
-    badge: 'Nutrição vegetal',
-  },
-  {
-    id: 'documentos',
-    title: 'Prescrição técnica e receituário',
-    desc: 'Estruturação de receituários agronômicos, pareceres técnicos e cronogramas de pulverização prontos para exportação em PDF e Word.',
-    detail: 'Formato normatizado · Compatível com emissão de ART · Download direto',
-    badge: 'Documentação',
+    id: 'laudos',
+    title: 'Exportação de laudos',
+    desc: 'Geração de relatórios técnicos em PDF e Word, conforme as funcionalidades existentes.',
+    image: '/images/crop_sunset.jpg',
+    badge: 'Documentação técnica',
+    icon: <IconDoc />,
   },
 ];
 
-const WORKFLOW_STEPS = [
+// ── 4 Etapas da Metodologia Agronômica (Seção 8 do Prompt) ──
+const METHODOLOGY_STEPS = [
   {
-    number: '1',
-    title: 'Registro da demanda de campo',
-    desc: 'Descreva a ocorrência no talhão, informe os índices da análise de solo ou envie uma foto nítida do tecido vegetal afetado.',
+    num: '1',
+    title: 'Coleta de dados',
+    desc: 'Recebimento de imagens, informações da cultura e resultados de análises laboratoriais.',
+    icon: <IconCamera />,
   },
   {
-    number: '2',
-    title: 'Processamento técnico cruzado',
-    desc: 'O sistema correlaciona os sintomas com a literatura agronômica brasileira, guias da Embrapa e bases de produtos homologados no MAPA.',
+    num: '2',
+    title: 'Análise técnica',
+    desc: 'Interpretação das informações com base em critérios agronômicos e referências disponíveis.',
+    icon: <IconFlask />,
   },
   {
-    number: '3',
-    title: 'Parecer com prescrição fundamentada',
-    desc: 'Receba o diagnóstico imediato, dosagem recomendada por hectare, volume de calda, estádio de aplicação e medidas preventivas.',
+    num: '3',
+    title: 'Construção da recomendação',
+    desc: 'Organização dos resultados e apresentação de orientações contextualizadas.',
+    icon: <IconLayers />,
   },
   {
-    number: '4',
-    title: 'Emissão e exportação do documento',
-    desc: 'Exporte o receituário agronômico ou laudo técnico em PDF e Word para anexar ao histórico da fazenda ou encaminhar ao produtor.',
-  },
-];
-
-const FAQS = [
-  {
-    q: 'O AgroBot substitui o agrônomo ou responsável técnico?',
-    a: 'Não. O AgroBot atua como ferramenta de apoio à decisão técnica agronômica. A responsabilidade técnica, diagnósticos oficiais e emissão formal de Anotação de Responsabilidade Técnica (ART/CREA) continuam sob a prerrogativa do engenheiro agrônomo habilitado.',
-  },
-  {
-    q: 'O sistema é calibrado para quais culturas agrícolas?',
-    a: 'O AgroBot foi treinado nas condições tropicais e subtropicais brasileiras, cobrindo soja, milho, algodão, café, cana-de-açúcar, trigo, feijão, citros, hortaliças e pastagens, considerando épocas de safrinha, plantio direto e biomas locais.',
-  },
-  {
-    q: 'Como funciona o envio de fotos para identificação?',
-    a: 'Você pode fotografar folhas, colmos, raízes ou áreas do talhão diretamente pelo celular e anexar na conversa. O modelo analisa padrões de lesões, necrose, clorose e características visuais para sugerir hipóteses diagnósticas.',
-  },
-  {
-    q: 'Posso utilizar no celular durante a inspeção de campo?',
-    a: 'Sim. A plataforma é totalmente responsiva e funciona em navegadores móveis sem requerer instalação pesada, ideal para consultas rápidas na beira do talhão ou no escritório da fazenda.',
+    num: '4',
+    title: 'Documentação técnica',
+    desc: 'Apresentação das informações em relatórios claros e rastreáveis, quando disponível.',
+    icon: <IconDoc />,
   },
 ];
 
@@ -118,7 +209,8 @@ export default function Landing() {
     if (sessionStorage.getItem('agro_token')) navigate('/chat');
   }, [navigate]);
 
-  const [openFaq, setOpenFaq] = useState(0);
+  const [activeSection, setActiveSection] = useState('inicio');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -167,6 +259,7 @@ export default function Landing() {
     setVerifSuccessMsg('');
     setResendSuccess('');
     setModalOpen(true);
+    setMobileMenuOpen(false);
   }
 
   function closeModal() {
@@ -182,8 +275,13 @@ export default function Landing() {
     setResendSuccess('');
   }
 
-  function scrollToSection(e, id) {
-    if (e && e.preventDefault) e.preventDefault();
+  function scrollToSection(id) {
+    setActiveSection(id);
+    setMobileMenuOpen(false);
+    if (id === 'inicio') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const el = document.getElementById(id);
     if (el) {
       const navOffset = 76;
@@ -248,55 +346,40 @@ export default function Landing() {
       const r = await fetch(`${API}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: signupName,
-          email: signupEmail,
-          password: signupPass,
-        }),
+        body: JSON.stringify({ name: signupName, email: signupEmail, password: signupPass }),
       });
       const data = await r.json();
       if (!r.ok) {
-        setSignupError(data.error || 'Não foi possível concluir o cadastro.');
+        setSignupError(data.error || 'Não foi possível efetuar o cadastro.');
         return;
       }
-      if (data.requires_verification) {
-        setVerifEmail(signupEmail);
-        setVerifCode('');
-        setVerifError('');
-        setVerifSuccessMsg(data.message || 'Código de confirmação enviado para seu e-mail.');
-        setResendSuccess('');
-        setModalTab('verify');
-        return;
-      }
-      if (data.token) {
-        sessionStorage.setItem('agro_token', data.token);
-        sessionStorage.setItem('agro_user', JSON.stringify(data.user));
-        navigate('/chat');
-      }
+      setVerifEmail(signupEmail);
+      setVerifCode('');
+      setVerifError('');
+      setVerifSuccessMsg(data.message || 'Código enviado para o e-mail informado.');
+      setModalTab('verify');
     } catch {
-      setSignupError('Erro ao registrar usuário. Tente novamente.');
+      setSignupError('Falha na comunicação com o servidor.');
     }
   }
 
   async function doVerifyCode() {
     setVerifError('');
-    setResendSuccess('');
-    const codeClean = verifCode.trim().replace(/\s+/g, '');
-    if (!codeClean || codeClean.length !== 6) {
-      setVerifError('Insira o código numérico de 6 dígitos.');
+    if (!verifCode || verifCode.length < 6) {
+      setVerifError('Digite o código numérico de 6 dígitos.');
       return;
     }
     setVerifLoading(true);
     try {
-      const r = await fetch(`${API}/api/verify-email`, {
+      const r = await fetch(`${API}/api/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: verifEmail, code: codeClean }),
+        body: JSON.stringify({ email: verifEmail, code: verifCode }),
       });
       const data = await r.json();
       setVerifLoading(false);
       if (!r.ok) {
-        setVerifError(data.error || 'Código incorreto ou tempo limite expirado.');
+        setVerifError(data.error || 'Código incorreto ou expirado.');
         return;
       }
       sessionStorage.setItem('agro_token', data.token);
@@ -339,7 +422,6 @@ export default function Landing() {
     }
     setGoogleLoading(true);
 
-    // Google Identity Services — ID Token verificado pelo backend
     window.google?.accounts.id.initialize({
       client_id: googleClientId,
       callback: async (response) => {
@@ -383,7 +465,6 @@ export default function Landing() {
     });
   }
 
-
   const EyeOpen = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="18" height="18">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -403,477 +484,550 @@ export default function Landing() {
     <div className="agro-app">
       <script src="https://accounts.google.com/gsi/client" async defer />
 
-      {/* ══ HEADER DE NAVEGAÇÃO ══ */}
-      <header className="agro-header">
-        <div className="agro-header-inner">
-          <a className="agro-brand" href="/">
-            <div className="agro-brand-mark">{AGRO_LOGO_ICON}</div>
-            <div className="agro-brand-text">
-              <span className="agro-brand-name">AgroBot</span>
-              <span className="agro-brand-sub">Inteligência Agronômica</span>
+      {/* ═════════════════════════════════════════════════════════════════
+         4. NAVEGAÇÃO SUPERIOR (COMPACTA, HORIZONTAL, SEM SIDEBAR)
+         Itens centrais: Início | Módulos técnicos | Metodologia
+         ═════════════════════════════════════════════════════════════════ */}
+      <header className="ag-navbar">
+        <div className="ag-container ag-nav-inner">
+          {/* Lado Esquerdo: Marca */}
+          <div className="ag-brand" onClick={() => scrollToSection('inicio')}>
+            <div className="ag-brand-icon">{AGRO_LOGO_ICON}</div>
+            <div className="ag-brand-text">
+              <span className="ag-brand-title">AgroBot</span>
+              <span className="ag-brand-sub">Inteligência Agronômica</span>
             </div>
-          </a>
+          </div>
 
-          <nav className="agro-nav" aria-label="Navegação principal">
-            <a
-              href="#modulos"
-              className="agro-nav-link"
-              onClick={(e) => scrollToSection(e, 'modulos')}
+          {/* Centro: Apenas Início, Módulos técnicos, Metodologia */}
+          <nav className="ag-nav-links" aria-label="Navegação principal">
+            <button
+              type="button"
+              className={`ag-nav-link${activeSection === 'inicio' ? ' active' : ''}`}
+              onClick={() => scrollToSection('inicio')}
+            >
+              Início
+            </button>
+            <button
+              type="button"
+              className={`ag-nav-link${activeSection === 'modulos' ? ' active' : ''}`}
+              onClick={() => scrollToSection('modulos')}
             >
               Módulos técnicos
-            </a>
-            <a
-              href="#metodologia"
-              className="agro-nav-link"
-              onClick={(e) => scrollToSection(e, 'metodologia')}
+            </button>
+            <button
+              type="button"
+              className={`ag-nav-link${activeSection === 'metodologia' ? ' active' : ''}`}
+              onClick={() => scrollToSection('metodologia')}
             >
               Metodologia
-            </a>
-            <a
-              href="#validacao"
-              className="agro-nav-link"
-              onClick={(e) => scrollToSection(e, 'validacao')}
-            >
-              Validação no campo
-            </a>
-            <a
-              href="#duvidas"
-              className="agro-nav-link"
-              onClick={(e) => scrollToSection(e, 'duvidas')}
-            >
-              Dúvidas
-            </a>
+            </button>
           </nav>
 
-          <div className="agro-header-actions">
+          {/* Lado Direito: Acesso à conta e CTA Iniciar diagnóstico */}
+          <div className="ag-nav-actions">
             <button
-              className="agro-btn agro-btn-ghost"
+              type="button"
+              className="ag-btn-login"
               onClick={() => openModal('login')}
             >
               Acessar conta
             </button>
             <button
-              className="agro-btn agro-btn-primary"
+              type="button"
+              className="ag-btn-cta-nav"
               onClick={() => openModal('signup')}
             >
-              Iniciar diagnóstico
+              <IconPlus />
+              <span>Iniciar diagnóstico</span>
             </button>
           </div>
+
+          {/* Botão Mobile Toggle */}
+          <button
+            type="button"
+            className="ag-menu-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Alternar menu de navegação"
+          >
+            {mobileMenuOpen ? <IconClose /> : <IconMenu />}
+          </button>
         </div>
+
+        {/* Menu Recolhível Mobile (sem sidebar) */}
+        {mobileMenuOpen && (
+          <div className="ag-mobile-menu open">
+            <button
+              type="button"
+              className="ag-mobile-link"
+              onClick={() => scrollToSection('inicio')}
+            >
+              Início
+            </button>
+            <button
+              type="button"
+              className="ag-mobile-link"
+              onClick={() => scrollToSection('modulos')}
+            >
+              Módulos técnicos
+            </button>
+            <button
+              type="button"
+              className="ag-mobile-link"
+              onClick={() => scrollToSection('metodologia')}
+            >
+              Metodologia
+            </button>
+            <div className="ag-mobile-actions">
+              <button
+                type="button"
+                className="ag-btn-login"
+                style={{ textAlign: 'center' }}
+                onClick={() => openModal('login')}
+              >
+                Acessar conta
+              </button>
+              <button
+                type="button"
+                className="ag-btn-cta-nav"
+                style={{ justifyContent: 'center' }}
+                onClick={() => openModal('signup')}
+              >
+                <IconPlus />
+                <span>Iniciar diagnóstico</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* ══ HERO SECTION ══ */}
-      <section className="agro-hero">
-        <div className="agro-hero-container">
-          <div className="agro-hero-col-text">
-            <div className="agro-status-flag">
-              <span className="agro-flag-indicator" />
-              <span>Suporte técnico para safra 2026/2027</span>
-            </div>
-
-            <h1 className="agro-hero-heading">
-              Diagnósticos agronômicos imediatos fundamentados na ciência do campo.
-            </h1>
-
-            <p className="agro-hero-summary">
-              Da interpretação química de solo ao manejo fitossanitário integrado. O AgroBot traduz dados laboratoriais e fotos de lavoura em prescrições claras, alinhadas à pesquisa tropical brasileira e às normas do MAPA.
-            </p>
-
-            <div className="agro-hero-cta-group">
-              <button
-                className="agro-btn agro-btn-primary agro-btn-lg"
-                onClick={() => openModal('signup')}
-              >
-                Abrir consulta gratuita
-              </button>
-              <button
-                className="agro-btn agro-btn-outline agro-btn-lg"
-                onClick={(e) => scrollToSection(e, 'validacao')}
-              >
-                Ver modelo de receituário
-              </button>
-            </div>
-
-            <div className="agro-hero-credentials">
-              <div className="agro-credential-item">
-                <span className="agro-cred-val">Normas MAPA</span>
-                <span className="agro-cred-label">Defensivos e dosagens registrados</span>
-              </div>
-              <div className="agro-credential-divider" />
-              <div className="agro-credential-item">
-                <span className="agro-cred-val">Calibragem Tropical</span>
-                <span className="agro-cred-label">Solos de Cerrado, Sul e Nordeste</span>
-              </div>
-              <div className="agro-credential-divider" />
-              <div className="agro-credential-item">
-                <span className="agro-cred-val">Exportação Direta</span>
-                <span className="agro-cred-label">Laudos normatizados em PDF e Word</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Coluna Direita: Dossiê Agronômico Interativo */}
-          <div className="agro-hero-col-card">
-            <div className="agro-dossier-card">
-              <div className="agro-dossier-topbar">
-                <div className="agro-dossier-id">
-                  <span className="agro-dossier-chip">Inspeção Fitossanitária</span>
-                  <span className="agro-dossier-talhao">Talhão G-04 · Soja</span>
-                </div>
-                <span className="agro-dossier-state">Estádio R1 (Florescimento)</span>
+      {/* ═════════════════════════════════════════════════════════════════
+         5. PÁGINA INICIAL / HERO SECTION (2 COLUNAS)
+         ═════════════════════════════════════════════════════════════════ */}
+      <section className="ag-hero" id="inicio">
+        <div className="ag-container">
+          <div className="ag-hero-grid">
+            {/* Coluna Esquerda: Textos, CTA e Benefícios */}
+            <div>
+              <div className="ag-badge-info">
+                <span className="ag-badge-spark">✦</span>
+                <span>Suporte técnico para safra 2026/2027</span>
               </div>
 
-              {/* Mensagem do Técnico */}
-              <div className="agro-dossier-query">
-                <div className="agro-dossier-avatar user">T</div>
-                <div className="agro-dossier-bubble user">
-                  <p>
-                    Identifiquei pontuações castanho-escuras no baixeiro de plantas em R1. A desfolha inicial começou no terço inferior. Qual o diagnóstico e conduta?
-                  </p>
-                  <span className="agro-dossier-time">Consulta registrada hoje às 08:34</span>
-                </div>
-              </div>
+              <h1 className="ag-hero-title">
+                Diagnósticos agronômicos imediatos fundamentados na ciência do campo.
+              </h1>
 
-              {/* Resposta Estruturada do AgroBot */}
-              <div className="agro-dossier-response">
-                <div className="agro-dossier-avatar bot">{AGRO_LOGO_ICON}</div>
-                <div className="agro-dossier-bubble bot">
-                  <div className="agro-diag-header">
-                    <span className="agro-diag-title">Hipótese Principal: Ferrugem Asiática</span>
-                    <span className="agro-diag-pathogen">Phakopsora pachyrhizi</span>
-                  </div>
-
-                  <div className="agro-metric-strip">
-                    <div className="agro-metric">
-                      <span className="agro-metric-k">Severidade estimada</span>
-                      <span className="agro-metric-v warn">3.8% (Terço inferior)</span>
-                    </div>
-                    <div className="agro-metric">
-                      <span className="agro-metric-k">Urgência de manejo</span>
-                      <span className="agro-metric-v alert">Imediata (até 48h)</span>
-                    </div>
-                    <div className="agro-metric">
-                      <span className="agro-metric-k">Alvo regulamentado</span>
-                      <span className="agro-metric-v success">Homologado MAPA</span>
-                    </div>
-                  </div>
-
-                  <div className="agro-diag-recom">
-                    <div className="agro-recom-line">
-                      <strong>Prescrição de manejo:</strong> Triazol + Estrobirulina associado obrigatoriamente a fungicida protetor multissítio (Mancozeb ou Clorotalonil) para contenção de resistência.
-                    </div>
-                    <div className="agro-recom-line">
-                      <strong>Parâmetro de calda:</strong> Volume mínimo de 120 L/ha com gotas médias para penetração adequada no dossel vegetativo.
-                    </div>
-                  </div>
-
-                  <div className="agro-dossier-action-row">
-                    <button
-                      className="agro-doc-pill"
-                      onClick={() => openModal('signup')}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                      Gerar Receituário Completo em PDF
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="agro-dossier-footer">
-                <span>Dados validados conforme recomendações de manejo do Consórcio Antiferrugem</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ MÓDULOS AGRONÔMICOS ══ */}
-      <section className="agro-section agro-bg-subtle" id="modulos">
-        <div className="agro-container">
-          <div className="agro-section-header">
-            <span className="agro-section-category">Cobertura técnica</span>
-            <h2 className="agro-section-title">
-              Disciplinas agronômicas integradas em uma única plataforma
-            </h2>
-            <p className="agro-section-lead">
-              Abordagem holística da lavoura: da estrutura físico-química da terra ao planejamento de colheita.
-            </p>
-          </div>
-
-          <div className="agro-modules-grid">
-            {/* Destaque: Diagnóstico Visual e Fitopatologia */}
-            <div className="agro-module-card agro-card-featured">
-              <div className="agro-card-top">
-                <span className="agro-module-badge">Visão Computacional Aplicada</span>
-                <h3 className="agro-card-heading">
-                  Inspeção fotográfica de tecidos e sintomas
-                </h3>
-                <p className="agro-card-text">
-                  Fotografe folhas, colmos ou raízes diretamente no campo. O modelo analisa necroses, padrões de halo clorótico e manchas para indicar patógenos prováveis com velocidade de campo.
-                </p>
-              </div>
-
-              <div className="agro-field-sample-preview">
-                <div className="agro-sample-bar">
-                  <span className="agro-sample-name">Amostra foliar #109 · Cultura: Soja</span>
-                  <span className="agro-sample-confidence">Alta correlação visual</span>
-                </div>
-                <div className="agro-sample-chips">
-                  <div className="agro-sample-chip">
-                    <span className="label">Lesão:</span>
-                    <span className="val">Pústulas no terço inferior</span>
-                  </div>
-                  <div className="agro-sample-chip">
-                    <span className="label">Condição:</span>
-                    <span className="val">Alta umidade relativa (&gt;85%)</span>
-                  </div>
-                  <div className="agro-sample-chip">
-                    <span className="label">Ação indicada:</span>
-                    <span className="val highlight">Aplicação preventiva em bloco</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Outros 5 Módulos */}
-            {DOMAIN_MODULES.map((item) => (
-              <div key={item.id} className="agro-module-card">
-                <div className="agro-card-top">
-                  <span className="agro-module-badge">{item.badge}</span>
-                  <h3 className="agro-card-heading">{item.title}</h3>
-                  <p className="agro-card-text">{item.desc}</p>
-                </div>
-                <div className="agro-module-detail">
-                  <span>{item.detail}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ METODOLOGIA DE TRABALHO ══ */}
-      <section className="agro-section" id="metodologia">
-        <div className="agro-container">
-          <div className="agro-section-header">
-            <span className="agro-section-category">Fluxo operacional</span>
-            <h2 className="agro-section-title">
-              Da identificação no campo à emissão do documento técnico
-            </h2>
-            <p className="agro-section-lead">
-              Processo estruturado em quatro etapas para garantir consistência e segurança nas recomendações.
-            </p>
-          </div>
-
-          <div className="agro-steps-sequence">
-            {WORKFLOW_STEPS.map((s) => (
-              <div key={s.number} className="agro-step-item">
-                <div className="agro-step-digit">{s.number}</div>
-                <div className="agro-step-content">
-                  <h3 className="agro-step-title">{s.title}</h3>
-                  <p className="agro-step-desc">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ VALIDAÇÃO NO CAMPO / DOCUMENTO EXEMPLO ══ */}
-      <section className="agro-section agro-bg-subtle" id="validacao">
-        <div className="agro-container">
-          <div className="agro-docket-layout">
-            <div className="agro-docket-context">
-              <span className="agro-section-category">Segurança técnica</span>
-              <h2 className="agro-section-title">
-                Documentação clara, objetiva e pronta para uso profissional
-              </h2>
-              <p className="agro-docket-lead">
-                O AgroBot gera relatórios com a terminologia exata exigida pelo setor: ingredientes ativos, grupos químicos, intervalos de segurança e volumes de calda ajustados para cada estádio fenológico.
+              <p className="ag-hero-text">
+                O AgroBot traduz dados laboratoriais e fotos de lavoura em prescrições claras, alinhadas à pesquisa tropical brasileira e às normas do MAPA.
               </p>
-              <div className="agro-checklist">
-                <div className="agro-check-row">
-                  <span className="agro-check-icon">✓</span>
-                  <span>Adequação às diretrizes fitossanitárias brasileiras</span>
-                </div>
-                <div className="agro-check-row">
-                  <span className="agro-check-icon">✓</span>
-                  <span>Cálculos automatizados de doses por área e vazão de pontas</span>
-                </div>
-                <div className="agro-check-row">
-                  <span className="agro-check-icon">✓</span>
-                  <span>Exportação instantânea para PDF formal e Word editável</span>
-                </div>
+
+              <div className="ag-hero-buttons">
+                <button
+                  type="button"
+                  className="ag-btn-primary"
+                  onClick={() => openModal('signup')}
+                >
+                  <IconSearch />
+                  <span>Abrir diagnóstico</span>
+                </button>
+                <button
+                  type="button"
+                  className="ag-btn-outline"
+                  onClick={() => scrollToSection('modulos')}
+                >
+                  <IconLayers />
+                  <span>Ver módulos técnicos</span>
+                </button>
               </div>
-              <button
-                className="agro-btn agro-btn-primary agro-btn-lg"
-                onClick={() => openModal('signup')}
-              >
-                Gerar meu primeiro laudo técnico
-              </button>
             </div>
 
-            {/* Simulação de Laudo Impresso */}
-            <div className="agro-docket-visual">
-              <div className="agro-paper-sheet">
-                <div className="agro-paper-header">
+            {/* Coluna Direita: Fotografia de Alta Qualidade com Card Flutuante */}
+            <div className="ag-hero-visual">
+              <img
+                src="/images/hero_plants.jpg"
+                alt="Plantação de soja sob iluminação natural do sol poente"
+                className="ag-hero-photo"
+              />
+
+              {/* Card Elegante com 3 Benefícios */}
+              <div className="ag-hero-floating-card">
+                <div className="ag-floating-header">
+                  <div className="ag-floating-header-icon">
+                    <IconSprout />
+                  </div>
                   <div>
-                    <div className="agro-paper-brand">AGROBOT · LAUDO E PRESCRIÇÃO TÉCNICA</div>
-                    <div className="agro-paper-ref">Protocolo: 2026-SP-0914 · Talhão G-04</div>
-                  </div>
-                  <span className="agro-paper-tag">Documento Técnico</span>
-                </div>
-
-                <div className="agro-paper-meta-table">
-                  <div className="agro-meta-cell">
-                    <span className="label">Cultura</span>
-                    <span className="val">Soja (Glycine max)</span>
-                  </div>
-                  <div className="agro-meta-cell">
-                    <span className="label">Área vistoriada</span>
-                    <span className="val">180 hectares</span>
-                  </div>
-                  <div className="agro-meta-cell">
-                    <span className="label">Estádio fenológico</span>
-                    <span className="val">R1 (Florescimento pleno)</span>
-                  </div>
-                  <div className="agro-meta-cell">
-                    <span className="label">Alvo diagnosticado</span>
-                    <span className="val highlight">Phakopsora pachyrhizi</span>
+                    <h3 className="ag-floating-title">Ciência + Campo</h3>
+                    <p className="ag-floating-sub">Tecnologia a serviço do produtor rural.</p>
                   </div>
                 </div>
 
-                <div className="agro-paper-section">
-                  <div className="agro-paper-subheading">Prescrição e Conduta Operacional</div>
-                  <div className="agro-paper-instruction">
-                    <p><strong>Produto de referência:</strong> Fungicida sistêmico (Triazol + Estrobirulina).</p>
-                    <p><strong>Adjuvante multissítio:</strong> Associação com Mancozeb a 1,5 kg/ha para desacelerar pressão de seleção de cepas resistentes.</p>
-                    <p><strong>Condições meteorológicas:</strong> Realizar pulverização com ventos entre 3 e 10 km/h, temperatura inferior a 30°C e umidade relativa do ar acima de 55%.</p>
+                <div className="ag-floating-body">
+                  <div className="ag-floating-item">
+                    <div className="ag-floating-bubble">
+                      <IconFlask />
+                    </div>
+                    <div>
+                      <h4 className="ag-floating-item-title">Diagnósticos precisos</h4>
+                      <p className="ag-floating-item-sub">com base científica</p>
+                    </div>
+                  </div>
+
+                  <div className="ag-floating-item">
+                    <div className="ag-floating-bubble">
+                      <IconSprout />
+                    </div>
+                    <div>
+                      <h4 className="ag-floating-item-title">Recomendações personalizadas</h4>
+                      <p className="ag-floating-item-sub">para cada cultura</p>
+                    </div>
+                  </div>
+
+                  <div className="ag-floating-item">
+                    <div className="ag-floating-bubble">
+                      <IconWheat />
+                    </div>
+                    <div>
+                      <h4 className="ag-floating-item-title">Mais produtividade</h4>
+                      <p className="ag-floating-item-sub">e sustentabilidade</p>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <div className="agro-paper-footer">
-                  <span>Gerado via sistema de inteligência agronômica AgroBot</span>
-                  <span>Formato A4 para impressão e arquivamento</span>
+          {/* 3 Benefícios Compactos + Destaque com Fotografia de Lavoura */}
+          <div className="ag-hero-bottom-grid">
+            {/* Benefício 1: Normas MAPA */}
+            <div className="ag-benefit-card" onClick={() => openModal('signup')}>
+              <div>
+                <div className="ag-benefit-icon">
+                  <IconShieldCheck />
                 </div>
+                <h3 className="ag-benefit-title">Normas MAPA</h3>
+                <p className="ag-benefit-desc">Defensivos e dosagens registrados</p>
+              </div>
+              <span className="ag-benefit-arrow"><IconArrowRight /></span>
+            </div>
+
+            {/* Benefício 2: Calibragem Tropical */}
+            <div className="ag-benefit-card" onClick={() => openModal('signup')}>
+              <div>
+                <div className="ag-benefit-icon">
+                  <IconFlask />
+                </div>
+                <h3 className="ag-benefit-title">Calibragem Tropical</h3>
+                <p className="ag-benefit-desc">Solos de Cerrado, Sul e Nordeste</p>
+              </div>
+              <span className="ag-benefit-arrow"><IconArrowRight /></span>
+            </div>
+
+            {/* Benefício 3: Exportação Direta */}
+            <div className="ag-benefit-card" onClick={() => openModal('signup')}>
+              <div>
+                <div className="ag-benefit-icon">
+                  <IconDoc />
+                </div>
+                <h3 className="ag-benefit-title">Exportação Direta</h3>
+                <p className="ag-benefit-desc">Laudos formatados em PDF e Word</p>
+              </div>
+              <span className="ag-benefit-arrow"><IconArrowRight /></span>
+            </div>
+
+            {/* Card Destaque: Imagem de Lavoura ao Pôr do Sol */}
+            <div
+              className="ag-benefit-highlight"
+              style={{ backgroundImage: `url('/images/crop_sunset.jpg')` }}
+              onClick={() => openModal('signup')}
+            >
+              <div className="ag-highlight-content">
+                <div className="ag-highlight-icon">
+                  <IconSprout />
+                </div>
+                <div className="ag-highlight-text">
+                  Agricultura mais inteligente, do campo à decisão.
+                </div>
+                <span className="ag-highlight-arrow"><IconArrowRight /></span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ══ DÚVIDAS FREQUENTES ══ */}
-      <section className="agro-section" id="duvidas">
-        <div className="agro-container agro-container-narrow">
-          <div className="agro-section-header agro-text-center">
-            <span className="agro-section-category">Perguntas frequentes</span>
-            <h2 className="agro-section-title">
-              Esclarecimentos sobre o funcionamento do assistente
+      {/* ═════════════════════════════════════════════════════════════════
+         7. SEÇÃO DE MÓDULOS TÉCNICOS (GRADE RESPONSIVA COM CARDS COMPACTOS)
+         ═════════════════════════════════════════════════════════════════ */}
+      <section className="ag-section ag-section-white" id="modulos">
+        <div className="ag-container">
+          <div className="ag-section-header">
+            <span className="ag-section-tag">Disciplinas Integradas</span>
+            <h2 className="ag-section-title">
+              Soluções completas para cada desafio no campo.
             </h2>
-            <p className="agro-section-lead">
-              Tudo o que você precisa saber sobre suporte técnico, culturas atendidas e precisão das recomendações.
+            <p className="ag-section-lead">
+              Acesse os módulos técnicos e obtenha diagnósticos, recomendações e orientações baseadas em ciência, dados e experiência prática.
             </p>
           </div>
 
-          <div className="agro-faq-accordion">
-            {FAQS.map((item, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div key={idx} className={`agro-faq-entry${isOpen ? ' is-open' : ''}`}>
-                  <button
-                    className="agro-faq-toggle"
-                    onClick={() => setOpenFaq(isOpen ? -1 : idx)}
-                    aria-expanded={isOpen}
-                  >
-                    <span className="agro-faq-q">{item.q}</span>
-                    <span className="agro-faq-indicator">{isOpen ? '−' : '+'}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="agro-faq-answer">
-                      <p>{item.a}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ RODAPÉ ══ */}
-      <footer className="agro-footer">
-        <div className="agro-container">
-          <div className="agro-footer-main">
-            <div className="agro-footer-identity">
-              <a href="/" className="agro-brand">
-                <div className="agro-brand-mark">{AGRO_LOGO_ICON}</div>
-                <div className="agro-brand-text">
-                  <span className="agro-brand-name">AgroBot</span>
-                  <span className="agro-brand-sub">Inteligência Agronômica</span>
-                </div>
-              </a>
-              <p className="agro-footer-motto">
-                Tecnologia de apoio à decisão agronômica para produtores, consultorias e engenheiros agrônomos em todo o território nacional.
-              </p>
-            </div>
-
-            <nav className="agro-footer-links" aria-label="Links institucionais">
-              <a
-                href="#modulos"
-                className="agro-footer-link"
-                onClick={(e) => scrollToSection(e, 'modulos')}
-              >
-                Módulos
-              </a>
-              <a
-                href="#metodologia"
-                className="agro-footer-link"
-                onClick={(e) => scrollToSection(e, 'metodologia')}
-              >
-                Metodologia
-              </a>
-              <a
-                href="#validacao"
-                className="agro-footer-link"
-                onClick={(e) => scrollToSection(e, 'validacao')}
-              >
-                Receituário
-              </a>
-              <a
-                href="#duvidas"
-                className="agro-footer-link"
-                onClick={(e) => scrollToSection(e, 'duvidas')}
-              >
-                Dúvidas
-              </a>
-              <a
-                href="/privacidade"
-                className="agro-footer-link"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate('/privacidade');
+          <div className="ag-modules-grid">
+            {TECHNICAL_MODULES.map((mod) => (
+              <div
+                key={mod.id}
+                className="ag-module-card"
+                onClick={() => {
+                  if (mod.id === 'pragas') {
+                    scrollToSection('diagnostico-exemplo');
+                  } else {
+                    openModal('signup');
+                  }
                 }}
               >
-                Política de Privacidade
-              </a>
-            </nav>
+                {/* Fotografia Agrícola do Módulo */}
+                <div className="ag-module-thumb">
+                  <img
+                    src={mod.image}
+                    alt={mod.title}
+                    className="ag-module-thumb-img"
+                  />
+                  <div className="ag-module-thumb-badge">
+                    <IconCamera />
+                    <span>{mod.badge}</span>
+                  </div>
+                </div>
+
+                {/* Conteúdo */}
+                <div className="ag-module-content">
+                  <div>
+                    <div className="ag-module-header">
+                      <div className="ag-module-icon-wrap">{mod.icon}</div>
+                      <h3 className="ag-module-title">{mod.title}</h3>
+                    </div>
+                    <p className="ag-module-desc">{mod.desc}</p>
+                  </div>
+
+                  <div className="ag-module-footer">
+                    <span>Acessar módulo</span>
+                    <span><IconArrowRight /></span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="agro-footer-baseline">
-            <div className="agro-footer-copyright">
-              © 2026/2027 AgroBot. Desenvolvido para a agricultura brasileira.
+          {/* ═════════════════════════════════════════════════════════════
+             9. SEÇÃO DE DESTAQUE TÉCNICO (EXEMPLO ILUSTRATIVO DE DIAGNÓSTICO)
+             ═════════════════════════════════════════════════════════════ */}
+          <div className="ag-showcase-box" id="diagnostico-exemplo">
+            <div className="ag-showcase-photo-wrap">
+              <img
+                src="/images/leaf_disease.jpg"
+                alt="Exemplo ilustrativo de folha de soja com sintomas de ferrugem asiática"
+                className="ag-showcase-photo"
+              />
+              <div className="ag-showcase-photo-badge">
+                <IconCamera />
+                <span>Análise fotográfica ilustrativa</span>
+              </div>
             </div>
-            <div className="agro-footer-legal">
-              As recomendações servem como auxílio à tomada de decisão e não dispensam vistoria presencial.
+
+            <div className="ag-showcase-info">
+              <span className="ag-showcase-label">Exemplo de Diagnóstico Agronômico</span>
+              <h3 className="ag-showcase-title">Ferrugem Asiática</h3>
+              <p className="ag-showcase-latin">Phakopsora pachyrhizi · Cultura: Soja (Glycine max) · Estádio R1</p>
+
+              <div className="ag-showcase-metrics">
+                <div className="ag-metric-item">
+                  <span className="ag-metric-k">Severidade estimada</span>
+                  <span className="ag-metric-v">3.8% (Terço inferior)</span>
+                </div>
+                <div className="ag-metric-item">
+                  <span className="ag-metric-k">Urgência de manejo</span>
+                  <span className="ag-metric-v danger">Imediata (até 48h)</span>
+                </div>
+                <div className="ag-metric-item">
+                  <span className="ag-metric-k">Alvo regulamentado</span>
+                  <span className="ag-metric-v valid">Homologado MAPA</span>
+                </div>
+              </div>
+
+              <div className="ag-showcase-recommendation">
+                <strong>Diretriz técnica recomendada:</strong> Associação de fungicida sistêmico com protetor multissítio para contenção de resistência genética do fungo. Calda mínima de 120 L/ha com gotas médias para cobertura do baixeiro.
+              </div>
+
+              <div className="ag-showcase-actions">
+                <button
+                  type="button"
+                  className="ag-btn-primary"
+                  onClick={() => openModal('signup')}
+                >
+                  <IconPlus />
+                  <span>Iniciar diagnóstico de campo</span>
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════════════════════════════════════════════════════════
+         8. PÁGINA / SEÇÃO DE METODOLOGIA (CIÊNCIA E TÉCNICA EM 4 ETAPAS)
+         ═════════════════════════════════════════════════════════════════ */}
+      <section className="ag-section ag-section-subtle" id="metodologia">
+        <div className="ag-container">
+          <div className="ag-section-header">
+            <span className="ag-section-tag">Critérios Agronômicos</span>
+            <h2 className="ag-section-title">
+              Ciência, dados e metodologia agronômica.
+            </h2>
+            <p className="ag-section-lead">
+              Conheça os critérios utilizados para interpretar informações, avaliar sintomas e estruturar recomendações técnicas.
+            </p>
+          </div>
+
+          <div className="ag-method-grid">
+            {METHODOLOGY_STEPS.map((step) => (
+              <div key={step.num} className="ag-method-step">
+                <div className="ag-step-number-wrap">
+                  <div className="ag-step-num">{step.num}</div>
+                  <div className="ag-step-icon">{step.icon}</div>
+                </div>
+                <h3 className="ag-step-title">{step.title}</h3>
+                <p className="ag-step-desc">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Banner Fotográfico da Metodologia */}
+          <div className="ag-method-banner">
+            <img
+              src="/images/crop_sunset.jpg"
+              alt="Paisagem de lavoura brasileira ao pôr do sol"
+              className="ag-method-banner-img"
+            />
+            <div className="ag-method-banner-overlay">
+              <div className="ag-method-banner-text">
+                <h3 className="ag-method-banner-title">Rigor científico adaptado à agricultura tropical</h3>
+                <p className="ag-method-banner-sub">
+                  Diretrizes fundamentadas na literatura agronômica brasileira, biomas nacionais e normativas oficiais de manejo sustentável.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════════════════════════════════════════════════════════
+         10. RODAPÉ PROFISSIONAL (4 GRUPOS + DIVISÓRIA + COPYRIGHT DINÂMICO)
+         ═════════════════════════════════════════════════════════════════ */}
+      <footer className="ag-footer">
+        <div className="ag-container">
+          <div className="ag-footer-grid">
+            {/* Grupo 1 — Marca */}
+            <div>
+              <div className="ag-brand" onClick={() => scrollToSection('inicio')}>
+                <div className="ag-brand-icon" style={{ background: 'rgba(255,255,255,0.12)', borderColor: '#A3D8BD' }}>
+                  {AGRO_LOGO_ICON}
+                </div>
+                <div className="ag-brand-text">
+                  <span className="ag-footer-brand-title">AgroBot</span>
+                  <span style={{ fontSize: 11, color: '#A3D8BD', fontWeight: 600 }}>Inteligência Agronômica</span>
+                </div>
+              </div>
+              <p className="ag-footer-brand-desc">
+                Tecnologia e ciência a serviço do produtor rural, consultorias e engenheiros agrônomos em todo o território nacional.
+              </p>
+            </div>
+
+            {/* Grupo 2 — Plataforma */}
+            <div>
+              <h4 className="ag-footer-col-title">Plataforma</h4>
+              <ul className="ag-footer-links">
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => scrollToSection('inicio')}>
+                    Início
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => scrollToSection('modulos')}>
+                    Módulos técnicos
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => scrollToSection('metodologia')}>
+                    Metodologia
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Grupo 3 — Recursos */}
+            <div>
+              <h4 className="ag-footer-col-title">Recursos</h4>
+              <ul className="ag-footer-links">
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => openModal('signup')}>
+                    Iniciar diagnóstico
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => scrollToSection('diagnostico-exemplo')}>
+                    Consultar recursos técnicos
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => openModal('login')}>
+                    Acessar conta
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Grupo 4 — Informações */}
+            <div>
+              <h4 className="ag-footer-col-title">Informações</h4>
+              <ul className="ag-footer-links">
+                <li>
+                  <a
+                    href="/privacidade"
+                    className="ag-footer-btn-link"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/privacidade');
+                    }}
+                  >
+                    Política de Privacidade
+                  </a>
+                </li>
+                <li>
+                  <button type="button" className="ag-footer-btn-link" onClick={() => openModal('signup')}>
+                    Termos de uso
+                  </button>
+                </li>
+                <li>
+                  <span style={{ fontSize: 13, color: '#A9C9BB' }}>
+                    Suporte técnico ao produtor
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Linha Divisória e Copyright Atualizado */}
+          <div className="ag-footer-bottom">
+            <span>
+              © {new Date().getFullYear()} AgroBot — Inteligência Agronômica. Todos os direitos reservados.
+            </span>
+            <span style={{ opacity: 0.8 }}>
+              Desenvolvido para apoiar a tomada de decisão no campo brasileiro.
+            </span>
           </div>
         </div>
       </footer>
 
-      {/* ══ MODAL DE AUTENTICAÇÃO ══ */}
+      {/* ═════════════════════════════════════════════════════════════════
+         MODAL DE AUTENTICAÇÃO (LOGIN / CADASTRO / GOOGLE / VERIFICAÇÃO)
+         ═════════════════════════════════════════════════════════════════ */}
       <div
         className={`agro-modal-backdrop${modalOpen ? ' is-visible' : ''}`}
         onClick={(e) => {
@@ -1055,6 +1209,7 @@ export default function Landing() {
                     type="button"
                     className="agro-pass-toggle"
                     onClick={() => setSignupPassVisible((v) => !v)}
+                    aria-label="Alternar visibilidade da senha"
                   >
                     {signupPassVisible ? <EyeOff /> : <EyeOpen />}
                   </button>
@@ -1076,6 +1231,7 @@ export default function Landing() {
                     type="button"
                     className="agro-pass-toggle"
                     onClick={() => setSignupConfirmVisible((v) => !v)}
+                    aria-label="Alternar visibilidade da senha"
                   >
                     {signupConfirmVisible ? <EyeOff /> : <EyeOpen />}
                   </button>
