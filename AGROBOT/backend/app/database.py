@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS users (
     google_sub    TEXT,
     picture       TEXT,
     plan          TEXT DEFAULT 'free',
+    registry      TEXT DEFAULT '',
     email_verified BOOLEAN DEFAULT FALSE,
     created_at    TIMESTAMPTZ DEFAULT NOW()
 );
@@ -74,6 +75,18 @@ BEGIN
         WHERE table_name='users' AND column_name='email_verified'
     ) THEN
         ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
+    END IF;
+END
+$$;
+
+-- Adiciona a coluna registry caso a tabela já exista sem ela
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='users' AND column_name='registry'
+    ) THEN
+        ALTER TABLE users ADD COLUMN registry TEXT DEFAULT '';
     END IF;
 END
 $$;
@@ -106,10 +119,23 @@ CREATE TABLE IF NOT EXISTS email_verifications (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email      TEXT NOT NULL,
     code       TEXT NOT NULL,
+    attempts   INT DEFAULT 0,
     expires_at TIMESTAMPTZ NOT NULL,
     used       BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Adiciona a coluna attempts caso a tabela já exista sem ela
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='email_verifications' AND column_name='attempts'
+    ) THEN
+        ALTER TABLE email_verifications ADD COLUMN attempts INT DEFAULT 0;
+    END IF;
+END
+$$;
 
 CREATE INDEX IF NOT EXISTS idx_conversations_user   ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conv        ON messages(conversation_id);

@@ -2,21 +2,21 @@
 routes/conversations.py — CRUD de conversas e mensagens.
 """
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..database import get_pool
-from ..dependencies import require_auth
+from ..dependencies import require_auth, check_rate_limit
 
 router = APIRouter(prefix="/api", tags=["conversations"])
 
 
 # ── Schemas ──────────────────────────────────────────────────
 class CreateConvBody(BaseModel):
-    title: str = "Nova conversa"
+    title: str = Field(default="Nova conversa", max_length=120)
 
 class SaveMessageBody(BaseModel):
     role: str
-    content: str = ""
+    content: str = Field(default="", max_length=15000)
 
 
 # ── GET /api/conversations ────────────────────────────────────
@@ -35,6 +35,8 @@ async def list_conversations(user_id: str = Depends(require_auth)):
 # ── POST /api/conversations ───────────────────────────────────
 @router.post("/conversations", status_code=201)
 async def create_conversation(body: CreateConvBody, user_id: str = Depends(require_auth)):
+    # SEC-04: Rate limit — máx 10 conversas/minuto por usuário
+    check_rate_limit(f"conv:create:{user_id}", max_attempts=10, window_seconds=60)
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -81,6 +83,8 @@ async def list_messages(conv_id: str, user_id: str = Depends(require_auth)):
 # ── POST /api/conversations/{conv_id}/messages ────────────────
 @router.post("/conversations/{conv_id}/messages", status_code=201)
 async def save_message(conv_id: str, body: SaveMessageBody, user_id: str = Depends(require_auth)):
+    # SEC-04: Rate limit — máx 30 mensagens/minuto por usuário
+    check_rate_limit(f"msg:save:{user_id}", max_attempts=30, window_seconds=60)
     if body.role not in ("user", "assistant"):
         raise HTTPException(400, "role deve ser 'user' ou 'assistant'.")
     if not body.content or not body.content.strip():

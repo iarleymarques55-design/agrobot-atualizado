@@ -1,35 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AgroBotLogo from '../components/AgroBotLogo';
 
 const API = import.meta.env.VITE_API_URL || '';
 
 // ── Ícones Agronômicos e da Interface ──
-const AGRO_LOGO_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" style={{ width: 22, height: 22 }}>
-    <path
-      d="M12 21V11"
-      stroke="#075E42"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-    />
-    <path
-      d="M12 11C12 11 7.2 9.5 5 5C5 5 9.8 3.5 13.5 7.5C13.5 7.5 15.2 9.2 12 11Z"
-      fill="#087A50"
-      fillOpacity="0.88"
-      stroke="#075E42"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M12 15C12 15 16.5 13.5 18 9C18 9 13.5 8 10.5 12.5C10.5 12.5 9.8 14 12 15Z"
-      fill="#4CAF50"
-      fillOpacity="0.8"
-      stroke="#075E42"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+
 
 const IconSearch = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -492,11 +468,7 @@ export default function Landing() {
         <div className="ag-container ag-nav-inner">
           {/* Lado Esquerdo: Marca */}
           <div className="ag-brand" onClick={() => scrollToSection('inicio')}>
-            <div className="ag-brand-icon">{AGRO_LOGO_ICON}</div>
-            <div className="ag-brand-text">
-              <span className="ag-brand-title">AgroBot</span>
-              <span className="ag-brand-sub">Inteligência Agronômica</span>
-            </div>
+            <AgroBotLogo theme="light" height={38} />
           </div>
 
           {/* Centro: Apenas Início, Módulos técnicos, Metodologia */}
@@ -538,7 +510,10 @@ export default function Landing() {
               className="ag-btn-cta-nav"
               onClick={() => openModal('signup')}
             >
-              <IconPlus />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
               <span>Iniciar diagnóstico</span>
             </button>
           </div>
@@ -593,7 +568,10 @@ export default function Landing() {
                 style={{ justifyContent: 'center' }}
                 onClick={() => openModal('signup')}
               >
-                <IconPlus />
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
                 <span>Iniciar diagnóstico</span>
               </button>
             </div>
@@ -602,154 +580,104 @@ export default function Landing() {
       </header>
 
       {/* ═════════════════════════════════════════════════════════════════
-         5. PÁGINA INICIAL / HERO SECTION (2 COLUNAS)
+         5. PÁGINA INICIAL / HERO SECTION (LAYOUT INTEGRADO COM FOTOGRAFIA)
          ═════════════════════════════════════════════════════════════════ */}
       <section className="ag-hero" id="inicio">
-        <div className="ag-container">
-          <div className="ag-hero-grid">
-            {/* Coluna Esquerda: Textos, CTA e Benefícios */}
-            <div>
-              <div className="ag-badge-info">
-                <span className="ag-badge-spark">✦</span>
-                <span>Suporte técnico para safra 2026/2027</span>
-              </div>
+        {/* Fotografia de fundo no lado direito com fade suave */}
+        <div className="ag-hero-bg-photo" />
 
-              <h1 className="ag-hero-title">
-                Diagnósticos agronômicos imediatos fundamentados na ciência do campo.
-              </h1>
-
-              <p className="ag-hero-text">
-                O AgroBot traduz dados laboratoriais e fotos de lavoura em prescrições claras, alinhadas à pesquisa tropical brasileira e às normas do MAPA.
-              </p>
-
-              <div className="ag-hero-buttons">
-                <button
-                  type="button"
-                  className="ag-btn-primary"
-                  onClick={() => openModal('signup')}
-                >
-                  <IconSearch />
-                  <span>Abrir diagnóstico</span>
-                </button>
-                <button
-                  type="button"
-                  className="ag-btn-outline"
-                  onClick={() => scrollToSection('modulos')}
-                >
-                  <IconLayers />
-                  <span>Ver módulos técnicos</span>
-                </button>
-              </div>
+        <div className="ag-container" style={{ position: 'relative', zIndex: 2 }}>
+          {/* Coluna de Conteúdo Textual à Esquerda */}
+          <div className="ag-hero-content-col">
+            <div className="ag-badge-info">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#165337' }}>
+                <path d="M7 20h10" />
+                <path d="M12 20v-8" />
+                <path d="M12 12a5 5 0 0 1 5-5c0 4-3 7-5 7" />
+                <path d="M12 12a5 5 0 0 0-5-5c0 4 3 7 5 7" />
+              </svg>
+              <span>Suporte técnico para uma agricultura mais eficiente</span>
             </div>
 
-            {/* Coluna Direita: Fotografia de Alta Qualidade com Card Flutuante */}
-            <div className="ag-hero-visual">
-              <img
-                src="/images/hero_plants.jpg"
-                alt="Plantação de soja sob iluminação natural do sol poente"
-                className="ag-hero-photo"
-              />
+            <h1 className="ag-hero-title">
+              Diagnósticos agronômicos imediatos fundamentados na ciência do campo.
+            </h1>
 
-              {/* Card Elegante com 3 Benefícios */}
-              <div className="ag-hero-floating-card">
-                <div className="ag-floating-header">
-                  <div className="ag-floating-header-icon">
-                    <IconSprout />
-                  </div>
-                  <div>
-                    <h3 className="ag-floating-title">Ciência + Campo</h3>
-                    <p className="ag-floating-sub">Tecnologia a serviço do produtor rural.</p>
-                  </div>
-                </div>
+            <p className="ag-hero-text">
+              O AgroBot traz a ciência da agronomia até o seu dia a dia, com análises precisas, recomendações técnicas e orientações personalizadas para a sua lavoura.
+            </p>
 
-                <div className="ag-floating-body">
-                  <div className="ag-floating-item">
-                    <div className="ag-floating-bubble">
-                      <IconFlask />
-                    </div>
-                    <div>
-                      <h4 className="ag-floating-item-title">Diagnósticos precisos</h4>
-                      <p className="ag-floating-item-sub">com base científica</p>
-                    </div>
-                  </div>
-
-                  <div className="ag-floating-item">
-                    <div className="ag-floating-bubble">
-                      <IconSprout />
-                    </div>
-                    <div>
-                      <h4 className="ag-floating-item-title">Recomendações personalizadas</h4>
-                      <p className="ag-floating-item-sub">para cada cultura</p>
-                    </div>
-                  </div>
-
-                  <div className="ag-floating-item">
-                    <div className="ag-floating-bubble">
-                      <IconWheat />
-                    </div>
-                    <div>
-                      <h4 className="ag-floating-item-title">Mais produtividade</h4>
-                      <p className="ag-floating-item-sub">e sustentabilidade</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="ag-hero-buttons">
+              <button
+                type="button"
+                className="ag-btn-primary"
+                onClick={() => openModal('signup')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>Nova consulta técnica</span>
+              </button>
+              <button
+                type="button"
+                className="ag-btn-outline"
+                onClick={() => scrollToSection('modulos')}
+              >
+                <IconLayers />
+                <span>Ver módulos técnicos</span>
+              </button>
             </div>
           </div>
 
-          {/* 3 Benefícios Compactos + Destaque com Fotografia de Lavoura */}
+          {/* 4 Cards na base do Hero */}
           <div className="ag-hero-bottom-grid">
-            {/* Benefício 1: Normas MAPA */}
+            {/* Card 1: Normas MAPA */}
             <div className="ag-benefit-card" onClick={() => openModal('signup')}>
               <div>
                 <div className="ag-benefit-icon">
-                  <IconShieldCheck />
+                  <IconSprout />
                 </div>
                 <h3 className="ag-benefit-title">Normas MAPA</h3>
-                <p className="ag-benefit-desc">Defensivos e dosagens registrados</p>
+                <p className="ag-benefit-desc">Confira as normas e exigências para sua produção.</p>
               </div>
               <span className="ag-benefit-arrow"><IconArrowRight /></span>
             </div>
 
-            {/* Benefício 2: Calibragem Tropical */}
+            {/* Card 2: Calibração em Tropical */}
             <div className="ag-benefit-card" onClick={() => openModal('signup')}>
               <div>
                 <div className="ag-benefit-icon">
                   <IconFlask />
                 </div>
-                <h3 className="ag-benefit-title">Calibragem Tropical</h3>
-                <p className="ag-benefit-desc">Solos de Cerrado, Sul e Nordeste</p>
+                <h3 className="ag-benefit-title">Calibração em Tropical</h3>
+                <p className="ag-benefit-desc">Coleta de variáveis, pH, NPK e textura.</p>
               </div>
               <span className="ag-benefit-arrow"><IconArrowRight /></span>
             </div>
 
-            {/* Benefício 3: Exportação Direta */}
+            {/* Card 3: Exportação Direta */}
             <div className="ag-benefit-card" onClick={() => openModal('signup')}>
               <div>
                 <div className="ag-benefit-icon">
                   <IconDoc />
                 </div>
                 <h3 className="ag-benefit-title">Exportação Direta</h3>
-                <p className="ag-benefit-desc">Laudos formatados em PDF e Word</p>
+                <p className="ag-benefit-desc">Laudos e informações para o mercado internacional.</p>
               </div>
               <span className="ag-benefit-arrow"><IconArrowRight /></span>
             </div>
 
-            {/* Card Destaque: Imagem de Lavoura ao Pôr do Sol */}
-            <div
-              className="ag-benefit-highlight"
-              style={{ backgroundImage: `url('/images/crop_sunset.jpg')` }}
-              onClick={() => openModal('signup')}
-            >
-              <div className="ag-highlight-content">
-                <div className="ag-highlight-icon">
+            {/* Card 4 Destaque: Verde Escuro Sólido */}
+            <div className="ag-benefit-card is-highlight" onClick={() => openModal('signup')}>
+              <div>
+                <div className="ag-benefit-icon is-highlight-icon">
                   <IconSprout />
                 </div>
-                <div className="ag-highlight-text">
+                <h3 className="ag-benefit-title is-highlight-title">
                   Agricultura mais inteligente, do campo à decisão.
-                </div>
-                <span className="ag-highlight-arrow"><IconArrowRight /></span>
+                </h3>
               </div>
+              <span className="ag-benefit-arrow is-highlight-arrow"><IconArrowRight /></span>
             </div>
           </div>
         </div>
@@ -815,58 +743,7 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* ═════════════════════════════════════════════════════════════
-             9. SEÇÃO DE DESTAQUE TÉCNICO (EXEMPLO ILUSTRATIVO DE DIAGNÓSTICO)
-             ═════════════════════════════════════════════════════════════ */}
-          <div className="ag-showcase-box" id="diagnostico-exemplo">
-            <div className="ag-showcase-photo-wrap">
-              <img
-                src="/images/leaf_disease.jpg"
-                alt="Exemplo ilustrativo de folha de soja com sintomas de ferrugem asiática"
-                className="ag-showcase-photo"
-              />
-              <div className="ag-showcase-photo-badge">
-                <IconCamera />
-                <span>Análise fotográfica ilustrativa</span>
-              </div>
-            </div>
 
-            <div className="ag-showcase-info">
-              <span className="ag-showcase-label">Exemplo de Diagnóstico Agronômico</span>
-              <h3 className="ag-showcase-title">Ferrugem Asiática</h3>
-              <p className="ag-showcase-latin">Phakopsora pachyrhizi · Cultura: Soja (Glycine max) · Estádio R1</p>
-
-              <div className="ag-showcase-metrics">
-                <div className="ag-metric-item">
-                  <span className="ag-metric-k">Severidade estimada</span>
-                  <span className="ag-metric-v">3.8% (Terço inferior)</span>
-                </div>
-                <div className="ag-metric-item">
-                  <span className="ag-metric-k">Urgência de manejo</span>
-                  <span className="ag-metric-v danger">Imediata (até 48h)</span>
-                </div>
-                <div className="ag-metric-item">
-                  <span className="ag-metric-k">Alvo regulamentado</span>
-                  <span className="ag-metric-v valid">Homologado MAPA</span>
-                </div>
-              </div>
-
-              <div className="ag-showcase-recommendation">
-                <strong>Diretriz técnica recomendada:</strong> Associação de fungicida sistêmico com protetor multissítio para contenção de resistência genética do fungo. Calda mínima de 120 L/ha com gotas médias para cobertura do baixeiro.
-              </div>
-
-              <div className="ag-showcase-actions">
-                <button
-                  type="button"
-                  className="ag-btn-primary"
-                  onClick={() => openModal('signup')}
-                >
-                  <IconPlus />
-                  <span>Iniciar diagnóstico de campo</span>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -926,13 +803,7 @@ export default function Landing() {
             {/* Grupo 1 — Marca */}
             <div>
               <div className="ag-brand" onClick={() => scrollToSection('inicio')}>
-                <div className="ag-brand-icon" style={{ background: 'rgba(255,255,255,0.12)', borderColor: '#A3D8BD' }}>
-                  {AGRO_LOGO_ICON}
-                </div>
-                <div className="ag-brand-text">
-                  <span className="ag-footer-brand-title">AgroBot</span>
-                  <span style={{ fontSize: 11, color: '#A3D8BD', fontWeight: 600 }}>Inteligência Agronômica</span>
-                </div>
+                <AgroBotLogo theme="dark" height={36} />
               </div>
               <p className="ag-footer-brand-desc">
                 Tecnologia e ciência a serviço do produtor rural, consultorias e engenheiros agrônomos em todo o território nacional.
@@ -1042,7 +913,9 @@ export default function Landing() {
           </button>
 
           <div className="agro-dialog-header">
-            <div className="agro-dialog-mark">{AGRO_LOGO_ICON}</div>
+            <div className="agro-dialog-mark" style={{ background: 'transparent', border: 'none', padding: 0 }}>
+              <AgroBotLogo theme="light" height={44} showSubtitle={false} />
+            </div>
             <h2 className="agro-dialog-title">
               {modalTab === 'login' && 'Acessar o AgroBot'}
               {modalTab === 'signup' && 'Criar sua conta de acesso'}

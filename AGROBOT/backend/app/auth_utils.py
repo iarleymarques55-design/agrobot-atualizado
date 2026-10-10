@@ -10,6 +10,8 @@ from jose import JWTError, jwt
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 if not JWT_SECRET:
     raise RuntimeError("JWT_SECRET não configurado! Defina esta variável de ambiente.")
+if os.getenv("ENV") == "production" and len(JWT_SECRET) < 32:
+    raise RuntimeError("Em modo de produção, JWT_SECRET deve ter ao menos 32 caracteres para garantir entropia criptográfica.")
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 7  # reduzido de 30 para 7 dias

@@ -1,31 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-
-const AGRO_LOGO_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" style={{ width: 20, height: 20 }}>
-    <path
-      d="M12 21V11"
-      stroke="#1F5E39"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-    />
-    <path
-      d="M12 11C12 11 7.5 9.8 5.5 5.5C5.5 5.5 10 3.8 13.5 7.5C13.5 7.5 15.2 9.2 12 11Z"
-      fill="#2E8B57"
-      fillOpacity="0.85"
-      stroke="#1F5E39"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M12 15.5C12 15.5 16 13.8 17.8 9.5C17.8 9.5 13.5 8.5 10.5 13C10.5 13 9.8 14.5 12 15.5Z"
-      fill="#4CAF50"
-      fillOpacity="0.75"
-      stroke="#1F5E39"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+import AgroBotLogo from '../components/AgroBotLogo';
 
 export default function Privacy() {
   const navigate = useNavigate();
@@ -42,11 +16,7 @@ export default function Privacy() {
               navigate('/');
             }}
           >
-            <div className="agro-brand-mark">{AGRO_LOGO_ICON}</div>
-            <div className="agro-brand-text">
-              <span className="agro-brand-name">AgroBot</span>
-              <span className="agro-brand-sub">Inteligência Agronômica</span>
-            </div>
+            <AgroBotLogo theme="light" height={36} />
           </a>
 
           <div className="agro-header-actions">

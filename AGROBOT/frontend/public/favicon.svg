@@ -1,12 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Fundo -->
-  <rect width="32" height="32" rx="6" fill="#0D1410"/>
-  <!-- Caule -->
-  <line x1="16" y1="28" x2="16" y2="14" stroke="#A3E635" stroke-width="2.2" stroke-linecap="round"/>
-  <!-- Folha esquerda -->
-  <path d="M16 14 C16 14 10 12 8 7 C8 7 14 5.5 17 10 C17 10 18.5 12 16 14Z"
-        fill="#A3E635" fill-opacity="0.9" stroke="#6EAA1E" stroke-width="1.2" stroke-linejoin="round"/>
-  <!-- Folha direita -->
-  <path d="M16 19 C16 19 21 17 23 12 C23 12 18 11 15 16 C15 16 14 17.5 16 19Z"
-        fill="#A3E635" fill-opacity="0.75" stroke="#6EAA1E" stroke-width="1.2" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="favLeaf" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#10B981" />
+      <stop offset="100%" stopColor="#047857" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#053C2A" />
+  <g transform="translate(6, 6) scale(0.82)">
+    <!-- Asa Superior da Folha -->
+    <path
+      d="M 14,34 C 14,18 26,6 42,4 C 49,3 54,6 57,10 C 42,14 28,24 22,38 C 19,37 15,36 14,34 Z"
+      fill="url(#favLeaf)"
+    />
+    <!-- Asa Inferior da Folha -->
+    <path
+      d="M 50,22 C 50,38 38,50 22,52 C 15,53 10,50 7,46 C 22,42 36,32 42,18 C 45,19 49,20 50,22 Z"
+      fill="#34D399"
+    />
+  </g>
 </svg>

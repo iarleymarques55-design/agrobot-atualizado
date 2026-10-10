@@ -10,7 +10,7 @@ import httpx
 
 from ..database import get_pool
 from ..auth_utils import create_token, hash_password, verify_password
-from ..dependencies import require_auth
+from ..dependencies import require_auth, check_rate_limit, get_client_ip
 from ..email_service import send_verification_email, generate_verification_code
 
 router = APIRouter(prefix="/api", tags=["auth"])
@@ -26,26 +26,6 @@ _EMAIL_RE = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 
 def _valid_email(email: str) -> bool:
     return bool(_EMAIL_RE.match(email)) and len(email) <= 254
-
-
-# ── Rate-limiting simples em memória (sem dependência extra) ──────────
-# Para produção com múltiplas instâncias, substitua por Redis + slowapi.
-import time
-from collections import defaultdict
-
-_attempts: dict[str, list[float]] = defaultdict(list)
-
-def _check_rate_limit(key: str, max_attempts: int = 10, window_seconds: int = 60):
-    now = time.monotonic()
-    timestamps = _attempts[key]
-    # Remove tentativas fora da janela
-    _attempts[key] = [t for t in timestamps if now - t < window_seconds]
-    if len(_attempts[key]) >= max_attempts:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Muitas tentativas. Aguarde um momento e tente novamente.",
-        )
-    _attempts[key].append(now)
 
 
 
@@ -69,6 +49,11 @@ class VerifyEmailBody(BaseModel):
     email: str
     code: str
 
+class UpdateProfileBody(BaseModel):
+    name: str | None = None
+    plan: str | None = None
+    registry: str | None = None
+
 
 # ── GET /api/config ───────────────────────────────────────────
 @router.get("/config")
@@ -80,7 +65,7 @@ async def get_config():
 @router.post("/register", status_code=201)
 async def register(body: RegisterBody, request: Request):
     # Rate limit: 5 tentativas por IP por minuto
-    _check_rate_limit(f"register:{request.client.host}", max_attempts=5, window_seconds=60)
+    check_rate_limit(f"register:{get_client_ip(request)}", max_attempts=5, window_seconds=60)
 
     name = body.name.strip()[:100]
     email = body.email.lower().strip()
@@ -160,7 +145,7 @@ async def register(body: RegisterBody, request: Request):
 async def send_verification(body: SendVerificationBody, request: Request):
     """Reenvia ou envia um novo código de verificação para o email."""
     # Rate limit: 3 envios por email por minuto
-    _check_rate_limit(f"send-verif:{body.email.lower().strip()}", max_attempts=3, window_seconds=60)
+    check_rate_limit(f"send-verif:{body.email.lower().strip()}", max_attempts=3, window_seconds=60)
 
     email = body.email.lower().strip()
     if not email or not _valid_email(email):
@@ -204,7 +189,7 @@ async def send_verification(body: SendVerificationBody, request: Request):
 async def verify_email(body: VerifyEmailBody, request: Request):
     """Verifica o código de 6 dígitos enviado ao e-mail do usuário."""
     # Rate limit: 10 tentativas por IP por minuto (anti brute-force do código)
-    _check_rate_limit(f"verify:{request.client.host}", max_attempts=10, window_seconds=60)
+    check_rate_limit(f"verify:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
 
     email = body.email.lower().strip()
     code = body.code.strip()
@@ -217,7 +202,7 @@ async def verify_email(body: VerifyEmailBody, request: Request):
         # Busca o código mais recente e ainda não usado
         record = await conn.fetchrow(
             """
-            SELECT id, code, expires_at, used
+            SELECT id, code, expires_at, used, attempts
             FROM email_verifications
             WHERE email=$1 AND used=FALSE
             ORDER BY created_at DESC
@@ -232,6 +217,14 @@ async def verify_email(body: VerifyEmailBody, request: Request):
         if record["used"]:
             raise HTTPException(400, "Código já utilizado. Solicite um novo código.")
 
+        # SEC-03: Bloqueia após 5 tentativas incorretas
+        if record["attempts"] >= 5:
+            await conn.execute(
+                "UPDATE email_verifications SET used=TRUE WHERE id=$1",
+                record["id"],
+            )
+            raise HTTPException(400, "Máximo de tentativas excedido. Solicite um novo código.")
+
         now_utc = datetime.now(timezone.utc)
         expires_at = record["expires_at"]
         if expires_at.tzinfo is None:
@@ -241,7 +234,13 @@ async def verify_email(body: VerifyEmailBody, request: Request):
             raise HTTPException(400, "Código expirado. Solicite um novo código.")
 
         if record["code"] != code:
-            raise HTTPException(400, "Código incorreto. Verifique o e-mail e tente novamente.")
+            # Incrementa tentativa e retorna erro
+            await conn.execute(
+                "UPDATE email_verifications SET attempts = attempts + 1 WHERE id=$1",
+                record["id"],
+            )
+            remaining = 4 - record["attempts"]
+            raise HTTPException(400, f"Código incorreto. Você tem {max(remaining, 0)} tentativa(s) restante(s).")
 
         # Marca o código como usado e o usuário como verificado
         await conn.execute(
@@ -272,7 +271,7 @@ async def verify_email(body: VerifyEmailBody, request: Request):
 @router.post("/login")
 async def login(body: LoginBody, request: Request):
     # Rate limit: 10 tentativas por IP por minuto
-    _check_rate_limit(f"login:{request.client.host}", max_attempts=10, window_seconds=60)
+    check_rate_limit(f"login:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
 
     email = body.email.lower().strip()
     password = body.password
@@ -335,7 +334,7 @@ async def login(body: LoginBody, request: Request):
 @router.post("/google-auth")
 async def google_auth(body: GoogleAuthBody, request: Request):
     """Valida o ID Token do Google server-side antes de criar a sessão."""
-    _check_rate_limit(f"google-auth:{request.client.host}", max_attempts=10, window_seconds=60)
+    check_rate_limit(f"google-auth:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
 
     if not body.id_token:
         raise HTTPException(400, "ID Token do Google é obrigatório.")
@@ -406,12 +405,59 @@ async def me(user_id: str = Depends(require_auth)):
     pool = await get_pool()
     async with pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id::text, name, email, plan, picture, email_verified FROM users WHERE id=$1::uuid",
+            """
+            SELECT id::text, name, email, plan, picture, email_verified,
+                   COALESCE(registry, '') AS registry
+            FROM users
+            WHERE id=$1::uuid
+            """,
             user_id,
         )
     if not user:
         raise HTTPException(404, "Usuário não encontrado.")
     return {"user": dict(user)}
+
+
+# ── PUT /api/me ───────────────────────────────────────────────
+@router.put("/me")
+async def update_me(body: UpdateProfileBody, user_id: str = Depends(require_auth)):
+    pool = await get_pool()
+    name = body.name.strip()[:100] if body.name is not None else None
+    plan = body.plan.strip()[:100] if body.plan is not None else None
+    registry = body.registry.strip()[:100] if body.registry is not None else None
+
+    async with pool.acquire() as conn:
+        current = await conn.fetchrow(
+            """
+            SELECT id::text, name, email, plan, picture, email_verified,
+                   COALESCE(registry, '') AS registry
+            FROM users
+            WHERE id=$1::uuid
+            """,
+            user_id,
+        )
+        if not current:
+            raise HTTPException(404, "Usuário não encontrado.")
+
+        new_name = name if name is not None and name != "" else current["name"]
+        new_plan = plan if plan is not None and plan != "" else current["plan"]
+        new_registry = registry if registry is not None else current["registry"]
+
+        updated = await conn.fetchrow(
+            """
+            UPDATE users
+            SET name = $1, plan = $2, registry = $3
+            WHERE id = $4::uuid
+            RETURNING id::text, name, email, plan, picture, email_verified,
+                      COALESCE(registry, '') AS registry
+            """,
+            new_name,
+            new_plan,
+            new_registry,
+            user_id,
+        )
+
+    return {"user": dict(updated)}
 
 
 # ── POST /api/logout ──────────────────────────────────────────

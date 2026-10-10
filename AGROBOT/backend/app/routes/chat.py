@@ -8,12 +8,12 @@ import os
 import json
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Any
 
-from ..dependencies import require_auth
+from ..dependencies import require_auth, check_rate_limit
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -35,13 +35,34 @@ class ChatBody(BaseModel):
     stream: bool = True
 
     def validated(self) -> "ChatBody":
-        """Aplica limites de tamanho e sanitiza o payload."""
+        """Aplica limites de tamanho, valida imagens e sanitiza o payload."""
         if len(self.messages) > _MAX_MESSAGES:
             self.messages = self.messages[-_MAX_MESSAGES:]
         for m in self.messages:
             c = m.get("content", "")
             if isinstance(c, str) and len(c) > _MAX_CONTENT_CHARS:
                 m["content"] = c[:_MAX_CONTENT_CHARS]
+            # SEC-06: Validação de imagens (máx 4 por mensagem, máx ~7MB base64 cada)
+            elif isinstance(c, list):
+                _MAX_IMAGES = 4
+                _MAX_IMG_BYTES = 7 * 1024 * 1024  # ~7MB em base64
+                img_count = 0
+                cleaned_parts = []
+                for part in c:
+                    if part.get("type") == "image_url":
+                        img_count += 1
+                        if img_count > _MAX_IMAGES:
+                            continue  # ignora imagens além do limite
+                        url = part.get("image_url", {}).get("url", "")
+                        if len(url) > _MAX_IMG_BYTES:
+                            continue  # ignora imagem maior que 7MB
+                        cleaned_parts.append(part)
+                    else:
+                        text_val = part.get("text", "")
+                        if len(text_val) > _MAX_CONTENT_CHARS:
+                            part["text"] = text_val[:_MAX_CONTENT_CHARS]
+                        cleaned_parts.append(part)
+                m["content"] = cleaned_parts
         if self.system and len(self.system) > _MAX_SYSTEM_CHARS:
             self.system = self.system[:_MAX_SYSTEM_CHARS]
         self.max_tokens = min(max(self.max_tokens, 200), 2000)
@@ -125,9 +146,16 @@ async def _stream_groq(groq_payload: dict):
                         err_msg = err_json.get("error", {}).get("message", err_text)
                     except Exception:
                         err_msg = err_text
+                    # SEC-09: Sanitiza mensagem de erro — não expõe detalhes internos do Groq
+                    safe_messages = {
+                        429: "Limite de requisições atingido. Aguarde um momento e tente novamente.",
+                        401: "Erro de autenticação com o serviço de IA.",
+                        403: "Acesso negado pelo serviço de IA.",
+                    }
+                    safe_msg = safe_messages.get(resp.status_code, f"Erro temporário no serviço de IA (código {resp.status_code}). Tente novamente.")
                     chunk = json.dumps({
                         "type": "content_block_delta",
-                        "delta": {"type": "text_delta", "text": f"⚠️ Erro ao consultar modelo ({resp.status_code}): {err_msg}"},
+                        "delta": {"type": "text_delta", "text": f"⚠️ {safe_msg}"},
                     })
                     yield f"data: {chunk}\n\n"
                     yield "data: [DONE]\n\n"
@@ -161,7 +189,9 @@ async def _stream_groq(groq_payload: dict):
 
 # ── POST /api/chat ────────────────────────────────────────────
 @router.post("/chat")
-async def chat(body: ChatBody, user_id: str = Depends(require_auth)):
+async def chat(body: ChatBody, request: Request, user_id: str = Depends(require_auth)):
+    # SEC-02: Rate limit por usuário autenticado — máx 15 requisições/minuto
+    check_rate_limit(f"chat:user:{user_id}", max_attempts=15, window_seconds=60)
     if not GROQ_API_KEY:
         raise HTTPException(500, "GROQ_API_KEY n\u00e3o configurada no servidor.")
 
