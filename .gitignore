@@ -1,0 +1,22 @@
+# BEMCICATRI
+BEMCICATRI/.env.example
+BEMCICATRI/.gitignore
+BEMCICATRI/HOSPEDAGEM-RAILWAY.md
+BEMCICATRI/docs/ESSENCIAL.txt
+BEMCICATRI/docs/FUNCIONALIDADES.md
+BEMCICATRI/docs/INICIAR.txt
+BEMCICATRI/docs/MUDANÇAS.txt
+BEMCICATRI/package-lock.json
+BEMCICATRI/package.json
+BEMCICATRI/public/app.js
+BEMCICATRI/public/db.js
+BEMCICATRI/public/email-validator.js
+BEMCICATRI/public/index.html
+BEMCICATRI/public/microscopia.js
+BEMCICATRI/public/offline-manager.js
+BEMCICATRI/public/planta-em-crescimento.png
+BEMCICATRI/public/server.js
+BEMCICATRI/public/storage-integration.js
+BEMCICATRI/public/storage-manager.js
+BEMCICATRI/public/styles.css
+BEMCICATRI/railway.toml

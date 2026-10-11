@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="favLeaf" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#10B981" />
+      <stop offset="100%" stopColor="#047857" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#053C2A" />
+  <g transform="translate(6, 6) scale(0.82)">
+    <!-- Asa Superior da Folha -->
+    <path
+      d="M 14,34 C 14,18 26,6 42,4 C 49,3 54,6 57,10 C 42,14 28,24 22,38 C 19,37 15,36 14,34 Z"
+      fill="url(#favLeaf)"
+    />
+    <!-- Asa Inferior da Folha -->
+    <path
+      d="M 50,22 C 50,38 38,50 22,52 C 15,53 10,50 7,46 C 22,42 36,32 42,18 C 45,19 49,20 50,22 Z"
+      fill="#34D399"
+    />
+  </g>
+</svg>
