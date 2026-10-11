@@ -10,10 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
+# Carrega .env antes de qualquer importação de rotas ou serviços
+load_dotenv()
+
 from .database import init_db, close_pool
 from .routes import auth, conversations, chat
-
-load_dotenv()
 
 # Origens permitidas — adicione a URL de produção via variável de ambiente
 _RAW_ORIGINS = os.getenv(

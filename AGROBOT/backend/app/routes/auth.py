@@ -58,7 +58,7 @@ class UpdateProfileBody(BaseModel):
 # ── GET /api/config ───────────────────────────────────────────
 @router.get("/config")
 async def get_config():
-    return {"googleClientId": GOOGLE_CLIENT_ID}
+    return {"googleClientId": os.getenv("GOOGLE_CLIENT_ID", "")}
 
 
 # ── POST /api/register ────────────────────────────────────────
@@ -353,7 +353,8 @@ async def google_auth(body: GoogleAuthBody, request: Request):
         raise HTTPException(503, "Não foi possível verificar o token do Google.")
 
     # Valida audience e issuer
-    if GOOGLE_CLIENT_ID and payload.get("aud") != GOOGLE_CLIENT_ID:
+    expected_cid = os.getenv("GOOGLE_CLIENT_ID", "")
+    if expected_cid and payload.get("aud") != expected_cid:
         raise HTTPException(401, "Token não pertence a esta aplicação.")
     if payload.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
         raise HTTPException(401, "Token do Google inválido.")

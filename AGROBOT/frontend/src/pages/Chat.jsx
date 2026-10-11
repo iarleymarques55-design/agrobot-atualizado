@@ -172,6 +172,10 @@ const API = import.meta.env.VITE_API_URL || '';
 function fmtMd(t) {
   if (!t || typeof t !== 'string') return '';
   return t
+    .replace(/\\times/g, '×')
+    .replace(/\\cdot/g, '·')
+    .replace(/\$\$([^\$]+)\$\$/g, '$1')
+    .replace(/\$([^\$]+)\$/g, '$1')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -215,8 +219,13 @@ function buildSystemPrompt(lang = 'pt-BR') {
 - Prescrição Técnica: elaboração de laudos, receituários agronômicos e planos de manejo completos
 
 Quando o usuário enviar fotos, faça análise detalhada de sintomas visuais, órgãos afetados e hipóteses com limiar de dano econômico.
-Responda sempre em ${l}. Use negrito para parâmetros técnicos essenciais e seja claro, rigoroso e fundamentado.`;
+Responda sempre em ${l}. Use negrito para parâmetros técnicos essenciais e seja claro, rigoroso e fundamentado.
+
+Diretrizes para Fórmulas e Cálculos Matemáticos:
+- NUNCA use notação LaTeX (não use cifrões $, colchetes \\[, barras invertidas como \\times, \\cdot, \\frac ou sublinhados como _c, _0).
+- Escreva fórmulas e expressões matemáticas em texto simples, limpo e legível, usando símbolos comuns como × (ou x), /, +, - e parênteses normais (exemplo: ETc = ET0 × Kc ou NC = (V2 - V1) × CTC / 100).`;
 }
+
 
 function getSavedSettings() {
   return Object.assign(
