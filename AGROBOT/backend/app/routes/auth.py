@@ -184,8 +184,9 @@ async def send_verification(body: SendVerificationBody, request: Request):
     return {"ok": True, "message": f"Código enviado para {email}."}
 
 
-# ── POST /api/verify-email ────────────────────────────────────
+# ── POST /api/verify-email e /api/verify-code ─────────────────
 @router.post("/verify-email")
+@router.post("/verify-code")
 async def verify_email(body: VerifyEmailBody, request: Request):
     """Verifica o código de 6 dígitos enviado ao e-mail do usuário."""
     # Rate limit: 10 tentativas por IP por minuto (anti brute-force do código)
