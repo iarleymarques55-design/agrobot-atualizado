@@ -390,16 +390,35 @@ export default function Landing() {
     }
   }
 
-  function googleSignIn() {
-    if (!googleClientId) {
+  async function googleSignIn() {
+    let cid = googleClientId;
+    if (!cid) {
+      try {
+        const r = await fetch(`${API}/api/config`);
+        const d = await r.json();
+        if (d.googleClientId) {
+          cid = d.googleClientId;
+          setGoogleClientId(cid);
+        }
+      } catch {}
+    }
+
+    if (!cid) {
       const errSetter = modalTab === 'login' ? setLoginError : setSignupError;
       errSetter('Autenticação Google ainda não configurada no servidor.');
       return;
     }
+
+    if (!window.google?.accounts?.id) {
+      const errSetter = modalTab === 'login' ? setLoginError : setSignupError;
+      errSetter('Aguardando inicialização do Google. Tente novamente em instantes.');
+      return;
+    }
+
     setGoogleLoading(true);
 
-    window.google?.accounts.id.initialize({
-      client_id: googleClientId,
+    window.google.accounts.id.initialize({
+      client_id: cid,
       callback: async (response) => {
         if (!response.credential) {
           setGoogleLoading(false);
@@ -458,7 +477,6 @@ export default function Landing() {
 
   return (
     <div className="agro-app">
-      <script src="https://accounts.google.com/gsi/client" async defer />
 
       {/* ═════════════════════════════════════════════════════════════════
          4. NAVEGAÇÃO SUPERIOR (COMPACTA, HORIZONTAL, SEM SIDEBAR)
