@@ -380,7 +380,7 @@ export default function Landing() {
       const data = await r.json();
       setResendLoading(false);
       if (!r.ok) {
-        setVerifError(data.error || 'Não foi possível reenviar o código agora.');
+        setVerifError(data.detail || data.error || 'Não foi possível reenviar o código agora.');
         return;
       }
       setResendSuccess(data.message || 'Novo código de verificação enviado.');
