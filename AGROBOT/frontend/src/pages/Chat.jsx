@@ -41,17 +41,8 @@ const DOC_ICON = (
   </svg>
 );
 
-const INITIAL_CONVERSATIONS = [
-  { id: 'c1', title: 'Quais informações devo o...', date: 'Hoje, 16:01', active: true },
-  { id: 'c2', title: 'Qual a recomendação de t...', date: '08/10/2026' },
-  { id: 'c3', title: 'Qual a recomendação de t...', date: '05/10/2026' },
-  { id: 'c4', title: 'Interpretar laudo de solo: p...', date: '05/10/2026' },
-  { id: 'c5', title: 'Quais nutrientes preciso ap...', date: '04/10/2026' },
-  { id: 'c6', title: 'Minha lavoura tem pH ácido,...', date: '03/10/2026' },
-  { id: 'c7', title: 'Estou vendo manchas nas fo...', date: '03/10/2026' },
-  { id: 'c8', title: 'Minha lavoura tem pH ácido,...', date: '03/10/2026' },
-  { id: 'c9', title: 'Minha lavoura tem pH ácido,...', date: '03/10/2026' },
-];
+// Histórico vazio por padrão — preenchido dinamicamente pelo servidor após login
+const INITIAL_CONVERSATIONS = [];
 
 const SUGGESTIONS = [
   {
@@ -243,8 +234,8 @@ export default function Chat() {
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [historyItems, setHistoryItems] = useState(INITIAL_CONVERSATIONS);
-  const [activeConvId, setActiveConvId] = useState('c1');
+  const [historyItems, setHistoryItems] = useState([]);
+  const [activeConvId, setActiveConvId] = useState(null);
   const [activeServerId, setActiveServerId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -300,18 +291,15 @@ export default function Chat() {
       if (!r.ok) return;
       const data = await r.json();
       const convs = data.conversations || [];
-      setHistoryItems((prev) => {
-        const ids = new Set(prev.map((x) => x.serverId));
-        const newItems = convs
-          .filter((c) => !ids.has(c.id))
-          .map((c) => ({
-            id: `server_${c.id}`,
-            title: c.title || 'Consulta agronômica',
-            date: c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : 'Hoje',
-            serverId: c.id,
-          }));
-        return [...newItems, ...prev];
-      });
+      // Substitui COMPLETAMENTE a lista com os dados reais do servidor
+      // para evitar que conversas de outros usuários apareçam
+      const serverItems = convs.map((c) => ({
+        id: `server_${c.id}`,
+        title: c.title || 'Consulta agronômica',
+        date: c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : 'Hoje',
+        serverId: c.id,
+      }));
+      setHistoryItems(serverItems);
     } catch {}
   }
 
@@ -593,6 +581,7 @@ export default function Chat() {
   }
 
   function selectHistory(item) {
+    // Salva snapshot da conversa atual antes de trocar
     if (activeConvId && messages.length > 0) {
       convSnapshotsRef.current[activeConvId] = {
         messages,
@@ -605,7 +594,19 @@ export default function Chat() {
     setActiveConvId(item.id);
     setActiveServerId(item.serverId || null);
     setSidebarOpen(false);
+    setInputVal('');
+    setCharCount(0);
 
+    // Itens sem serverId real (criados localmente nesta sessão mas não salvos)
+    // não têm conteúdo no servidor — abre tela de boas-vindas
+    if (!item.serverId) {
+      setMessages([]);
+      setConversationHistory([]);
+      setShowWelcome(true);
+      return;
+    }
+
+    // Se há snapshot em memória, usa ele
     if (convSnapshotsRef.current[item.id]) {
       const snap = convSnapshotsRef.current[item.id];
       setMessages(snap.messages);
@@ -614,9 +615,11 @@ export default function Chat() {
       return;
     }
 
-    if (item.serverId) {
-      loadServerConversation(item.serverId);
-    }
+    // Busca do servidor
+    setMessages([]);
+    setConversationHistory([]);
+    setShowWelcome(false);
+    loadServerConversation(item.serverId);
   }
 
   function logout() {
