@@ -347,7 +347,7 @@ export default function Landing() {
     }
     setVerifLoading(true);
     try {
-      const r = await fetch(`${API}/api/verify-code`, {
+      const r = await fetch(`${API}/api/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: verifEmail, code: verifCode }),
@@ -355,7 +355,7 @@ export default function Landing() {
       const data = await r.json();
       setVerifLoading(false);
       if (!r.ok) {
-        setVerifError(data.error || 'Código incorreto ou expirado.');
+        setVerifError(data.detail || data.error || 'Código incorreto ou expirado.');
         return;
       }
       sessionStorage.setItem('agro_token', data.token);
