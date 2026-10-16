@@ -229,6 +229,7 @@ export default function Landing() {
 
   function openModal(tab) {
     setModalTab(tab);
+    setGoogleLoading(false);
     setLoginError('');
     setSignupError('');
     setVerifError('');
@@ -240,10 +241,12 @@ export default function Landing() {
 
   function closeModal() {
     setModalOpen(false);
+    setGoogleLoading(false);
   }
 
   function switchTab(tab) {
     setModalTab(tab);
+    setGoogleLoading(false);
     setLoginError('');
     setSignupError('');
     setVerifError('');
@@ -391,6 +394,10 @@ export default function Landing() {
   }
 
   async function googleSignIn() {
+    const errSetter = modalTab === 'login' ? setLoginError : setSignupError;
+    errSetter('');
+
+    // Busca o client ID se ainda não tiver
     let cid = googleClientId;
     if (!cid) {
       try {
@@ -404,60 +411,82 @@ export default function Landing() {
     }
 
     if (!cid) {
-      const errSetter = modalTab === 'login' ? setLoginError : setSignupError;
       errSetter('Autenticação Google ainda não configurada no servidor.');
       return;
     }
 
-    if (!window.google?.accounts?.id) {
-      const errSetter = modalTab === 'login' ? setLoginError : setSignupError;
-      errSetter('Aguardando inicialização do Google. Tente novamente em instantes.');
+    if (!window.google?.accounts?.oauth2) {
+      errSetter('SDK do Google ainda está carregando. Aguarde e tente novamente.');
       return;
     }
 
     setGoogleLoading(true);
 
-    window.google.accounts.id.initialize({
-      client_id: cid,
-      callback: async (response) => {
-        if (!response.credential) {
-          setGoogleLoading(false);
-          const msg = 'Acesso Google cancelado ou não autorizado.';
-          if (modalTab === 'login') setLoginError(msg);
-          else setSignupError(msg);
-          return;
-        }
-        try {
-          const authResp = await fetch(`${API}/api/google-auth`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_token: response.credential }),
-          });
-          const authData = await authResp.json();
-          if (!authResp.ok) {
+    // Timeout de segurança — desbloqueia o botão se o popup for fechado ou travar
+    const safetyTimer = setTimeout(() => {
+      setGoogleLoading(false);
+    }, 90000); // 90 segundos
+
+    try {
+      // Usa o fluxo OAuth2 TokenClient com popup nativo — funciona em modais e dispensa client_secret
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: cid,
+        scope: 'openid email profile',
+        callback: async (tokenResp) => {
+          clearTimeout(safetyTimer);
+
+          if (tokenResp.error) {
             setGoogleLoading(false);
-            const msg = authData.detail || authData.error || 'Não foi possível autenticar com o Google.';
-            if (modalTab === 'login') setLoginError(msg);
-            else setSignupError(msg);
+            if (tokenResp.error !== 'access_denied') {
+              errSetter('Login com Google cancelado ou não autorizado.');
+            }
             return;
           }
-          sessionStorage.setItem('agro_token', authData.token);
-          sessionStorage.setItem('agro_user', JSON.stringify(authData.user));
-          navigate('/chat');
-        } catch {
+
+          if (!tokenResp.access_token) {
+            setGoogleLoading(false);
+            errSetter('Não foi possível obter autorização do Google.');
+            return;
+          }
+
+          try {
+            const authResp = await fetch(`${API}/api/google-auth`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ access_token: tokenResp.access_token }),
+            });
+            const authData = await authResp.json();
+
+            if (!authResp.ok) {
+              setGoogleLoading(false);
+              errSetter(authData.detail || authData.error || 'Não foi possível autenticar com o Google.');
+              return;
+            }
+
+            sessionStorage.setItem('agro_token', authData.token);
+            sessionStorage.setItem('agro_user', JSON.stringify(authData.user));
+            navigate('/chat');
+          } catch {
+            setGoogleLoading(false);
+            errSetter('Erro de conexão com o servidor de autenticação.');
+          }
+        },
+        error_callback: (err) => {
+          clearTimeout(safetyTimer);
           setGoogleLoading(false);
-          const msg = 'Erro de conexão com o servidor de autenticação.';
-          if (modalTab === 'login') setLoginError(msg);
-          else setSignupError(msg);
-        }
-      },
-      cancel_on_tap_outside: true,
-    });
-    window.google?.accounts.id.prompt((notification) => {
-      if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
-        setGoogleLoading(false);
-      }
-    });
+          // Se o usuário fechou o popup, não exibe erro invasivo, apenas libera o botão
+          if (err?.type && err.type !== 'popup_closed') {
+            errSetter('Janela de login fechada ou bloqueada pelo navegador.');
+          }
+        },
+      });
+
+      client.requestAccessToken();
+    } catch {
+      clearTimeout(safetyTimer);
+      setGoogleLoading(false);
+      errSetter('Não foi possível iniciar o login com Google.');
+    }
   }
 
   const EyeOpen = () => (
@@ -950,8 +979,10 @@ export default function Landing() {
           {modalTab === 'login' && (
             <div className="agro-form-stack">
               <button
+                type="button"
                 className={`agro-btn-social${googleLoading ? ' is-busy' : ''}`}
                 onClick={googleSignIn}
+                disabled={googleLoading}
               >
                 {!googleLoading && (
                   <svg width="18" height="18" viewBox="0 0 24 24">
@@ -1033,8 +1064,10 @@ export default function Landing() {
           {modalTab === 'signup' && (
             <div className="agro-form-stack">
               <button
+                type="button"
                 className={`agro-btn-social${googleLoading ? ' is-busy' : ''}`}
                 onClick={googleSignIn}
+                disabled={googleLoading}
               >
                 {!googleLoading && (
                   <svg width="18" height="18" viewBox="0 0 24 24">
