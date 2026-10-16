@@ -40,7 +40,11 @@ class LoginBody(BaseModel):
     password: str
 
 class GoogleAuthBody(BaseModel):
-    id_token: str  # Google ID Token — verificado server-side
+    id_token: str | None = None
+    access_token: str | None = None
+
+class GoogleAuthCodeBody(BaseModel):
+    code: str  # Authorization Code do fluxo OAuth2 popup
 
 class SendVerificationBody(BaseModel):
     email: str
@@ -334,31 +338,130 @@ async def login(body: LoginBody, request: Request):
 # ── POST /api/google-auth ─────────────────────────────────────
 @router.post("/google-auth")
 async def google_auth(body: GoogleAuthBody, request: Request):
-    """Valida o ID Token do Google server-side antes de criar a sessão."""
+    """
+    Valida o Access Token ou ID Token do Google server-side antes de criar a sessão.
+    O fluxo com Access Token via popup não exige client_secret no backend.
+    """
     check_rate_limit(f"google-auth:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
 
-    if not body.id_token:
-        raise HTTPException(400, "ID Token do Google é obrigatório.")
+    if not body.id_token and not body.access_token:
+        raise HTTPException(400, "Token do Google é obrigatório.")
 
-    # Verifica o ID Token junto à API pública do Google
+    expected_cid = os.getenv("GOOGLE_CLIENT_ID", "")
+    email, sub, name, picture = "", "", "", ""
+
+    if body.access_token:
+        # Valida via endpoint oficial userinfo com o Bearer token
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {body.access_token}"},
+                )
+            if resp.status_code != 200:
+                raise HTTPException(401, "Token de acesso do Google inválido ou expirado.")
+            payload = resp.json()
+        except httpx.RequestError:
+            raise HTTPException(503, "Não foi possível verificar o token junto ao Google.")
+
+        email = payload.get("email", "").lower().strip()
+        sub = payload.get("sub", "")
+        name = payload.get("name") or email.split("@")[0]
+        picture = payload.get("picture", "")
+
+    elif body.id_token:
+        # Verifica o ID Token junto à API pública do Google
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    "https://oauth2.googleapis.com/tokeninfo",
+                    params={"id_token": body.id_token},
+                )
+            if resp.status_code != 200:
+                raise HTTPException(401, "Token do Google inválido.")
+            payload = resp.json()
+        except httpx.RequestError:
+            raise HTTPException(503, "Não foi possível verificar o token do Google.")
+
+        # Valida audience e issuer
+        if expected_cid and payload.get("aud") != expected_cid:
+            raise HTTPException(401, "Token não pertence a esta aplicação.")
+        if payload.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+            raise HTTPException(401, "Token do Google inválido.")
+
+        email = payload.get("email", "").lower().strip()
+        sub = payload.get("sub", "")
+        name = payload.get("name") or email.split("@")[0]
+        picture = payload.get("picture", "")
+
+    if not email or not sub:
+        raise HTTPException(400, "Dados do Google incompletos.")
+
+    return await _upsert_google_user_and_token(email, sub, name, picture)
+
+
+# ── POST /api/google-auth-code ────────────────────────────────
+@router.post("/google-auth-code")
+async def google_auth_code(body: GoogleAuthCodeBody, request: Request):
+    """
+    Troca um Authorization Code (fluxo popup OAuth2) por tokens do Google,
+    obtém informações do usuário e cria/atualiza a conta.
+    Funciona corretamente dentro de modais — ao contrário do One Tap.
+    """
+    check_rate_limit(f"google-auth:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
+
+    if not body.code:
+        raise HTTPException(400, "Authorization code do Google é obrigatório.")
+
+    client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
+
+    if not client_id or not client_secret:
+        raise HTTPException(503, "Autenticação Google não configurada no servidor.")
+
+    # Troca o authorization code por tokens de acesso
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            token_resp = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": body.code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": "postmessage",  # obrigatório para ux_mode=popup
+                    "grant_type": "authorization_code",
+                },
+            )
+        if token_resp.status_code != 200:
+            raise HTTPException(401, "Não foi possível trocar o código Google por tokens.")
+        token_data = token_resp.json()
+    except httpx.RequestError:
+        raise HTTPException(503, "Não foi possível comunicar com o Google.")
+
+    id_token = token_data.get("id_token", "")
+    access_token = token_data.get("access_token", "")
+
+    if not id_token and not access_token:
+        raise HTTPException(401, "Resposta inválida do Google.")
+
+    # Obtém informações do usuário via userinfo endpoint
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                "https://oauth2.googleapis.com/tokeninfo",
-                params={"id_token": body.id_token},
-            )
-        if resp.status_code != 200:
-            raise HTTPException(401, "Token do Google inválido.")
-        payload = resp.json()
+            if access_token:
+                userinfo_resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+            else:
+                userinfo_resp = await client.get(
+                    "https://oauth2.googleapis.com/tokeninfo",
+                    params={"id_token": id_token},
+                )
+        if userinfo_resp.status_code != 200:
+            raise HTTPException(401, "Não foi possível obter dados do usuário Google.")
+        payload = userinfo_resp.json()
     except httpx.RequestError:
-        raise HTTPException(503, "Não foi possível verificar o token do Google.")
-
-    # Valida audience e issuer
-    expected_cid = os.getenv("GOOGLE_CLIENT_ID", "")
-    if expected_cid and payload.get("aud") != expected_cid:
-        raise HTTPException(401, "Token não pertence a esta aplicação.")
-    if payload.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
-        raise HTTPException(401, "Token do Google inválido.")
+        raise HTTPException(503, "Não foi possível verificar os dados do Google.")
 
     email = payload.get("email", "").lower().strip()
     sub = payload.get("sub", "")
@@ -368,6 +471,11 @@ async def google_auth(body: GoogleAuthBody, request: Request):
     if not email or not sub:
         raise HTTPException(400, "Dados do Google incompletos.")
 
+    return await _upsert_google_user_and_token(email, sub, name, picture)
+
+
+async def _upsert_google_user_and_token(email: str, sub: str, name: str, picture: str) -> dict:
+    """Cria ou atualiza o usuário Google e retorna o token JWT da aplicação."""
     pool = await get_pool()
     async with pool.acquire() as conn:
         existing = await conn.fetchrow(
@@ -399,6 +507,8 @@ async def google_auth(body: GoogleAuthBody, request: Request):
             "email_verified": True,
         },
     }
+
+
 
 
 # ── GET /api/me ───────────────────────────────────────────────
