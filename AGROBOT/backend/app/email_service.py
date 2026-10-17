@@ -3,9 +3,9 @@ email_service.py — Envio de emails via API do Brevo (ex-Sendinblue).
 Usa sib-api-v3-sdk com requisições síncronas em thread pool para não bloquear o event loop.
 """
 import os
+import html
 import secrets
 import asyncio
-from functools import partial
 
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
@@ -13,6 +13,7 @@ from sib_api_v3_sdk.rest import ApiException
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "noreply@agrobot.com.br")
 BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "AgroBot")
+IS_PRODUCTION = os.getenv("ENV", "development") == "production"
 
 
 def _get_api_instance():
@@ -28,6 +29,12 @@ def generate_verification_code() -> str:
     return str(secrets.randbelow(900000) + 100000)
 
 
+def _log_code_for_development(to_email: str, code: str):
+    """Em desenvolvimento, mostra o código no terminal para testar sem Brevo. Nunca em produção."""
+    if not IS_PRODUCTION:
+        print(f"\n{'='*50}\n[DEV] CÓDIGO DE VERIFICAÇÃO: {code} (para {to_email})\n{'='*50}\n")
+
+
 def _send_verification_email_sync(to_email: str, to_name: str, code: str) -> bool:
     """
     Envia o email de verificação de forma síncrona.
@@ -35,9 +42,12 @@ def _send_verification_email_sync(to_email: str, to_name: str, code: str) -> boo
     """
     if not BREVO_API_KEY:
         print("[EMAIL] BREVO_API_KEY não configurada. Email não enviado.")
+        _log_code_for_development(to_email, code)
         return False
 
     api_instance = _get_api_instance()
+    # O nome vem do formulário de cadastro: escapa antes de interpolar no HTML do e-mail
+    safe_name = html.escape(to_name)
 
     html_content = f"""
 <!DOCTYPE html>
@@ -84,7 +94,7 @@ def _send_verification_email_sync(to_email: str, to_name: str, code: str) -> boo
                 Confirme seu e-mail
               </h1>
               <p style="font-size:14.5px;line-height:1.7;color:#B2BFB5;margin:0 0 28px;">
-                Olá, <strong style="color:#FFFFFF;">{to_name}</strong>! Use o código abaixo para verificar seu endereço de e-mail no AgroBot.
+                Olá, <strong style="color:#FFFFFF;">{safe_name}</strong>! Use o código abaixo para verificar seu endereço de e-mail no AgroBot.
                 O código expira em <strong style="color:#FFFFFF;">15 minutos</strong>.
               </p>
 
@@ -137,7 +147,7 @@ def _send_verification_email_sync(to_email: str, to_name: str, code: str) -> boo
         return True
     except ApiException as e:
         print(f"[EMAIL ERRO] Falha ao enviar email via Brevo: {e}")
-        print(f"\n{'='*50}\n[CÓDIGO DE VERIFICAÇÃO]: {code} (para {to_email})\n{'='*50}\n")
+        _log_code_for_development(to_email, code)
         return False
 
 
@@ -146,9 +156,4 @@ async def send_verification_email(to_email: str, to_name: str, code: str) -> boo
     Wrapper assíncrono: executa o envio em thread pool
     para não bloquear o event loop do FastAPI.
     """
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        None,
-        partial(_send_verification_email_sync, to_email, to_name, code),
-    )
-    return result
+    return await asyncio.to_thread(_send_verification_email_sync, to_email, to_name, code)

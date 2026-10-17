@@ -52,10 +52,6 @@
   --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Fontes específicas do Chat */
-  --font-chat-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-chat-body: 'Source Sans 3', system-ui, sans-serif;
-
   /* Geometria e Relações Estruturais */
   --radius-xs: 3px;
   --radius-sm: 6px;
@@ -1771,7 +1767,7 @@ a {
   inset: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/images/agro_chat_bg.jpg');
+  background-image: url('/images/agro_chat_bg.webp');
   background-position: center bottom;
   background-size: cover;
   background-repeat: no-repeat;

@@ -56,6 +56,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # A API só devolve JSON/SSE: nada deve ser carregado nem embutido a partir dela.
+        # O Swagger (/docs, /redoc — só existe fora de produção) carrega scripts de CDN e fica de fora.
+        if not request.url.path.startswith(("/docs", "/redoc")):
+            response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         if ENV == "production":
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         return response

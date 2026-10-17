@@ -1,24 +1,34 @@
 """
 dependencies.py — FastAPI dependencies reutilizáveis e rate limiter defensivo.
+
+Limitação conhecida: o rate limiter vive na memória do processo. Ele zera a cada
+reinício e não é compartilhado entre instâncias. Para escalar horizontalmente,
+troque `_attempts` por um backend compartilhado (ex.: Redis).
 """
 import time
 from collections import defaultdict
 from fastapi import Header, HTTPException, Request, status
 
-from .auth_utils import verify_token
+from .auth_utils import decode_token
+from .database import get_pool
 
 _attempts: dict[str, list[float]] = defaultdict(list)
 _last_cleanup: float = time.monotonic()
 
 
 def get_client_ip(request: Request) -> str:
-    """Extrai o IP real do cliente considerando reverse proxies como Cloudflare/Railway/Nginx."""
+    """
+    Extrai o IP real do cliente atrás do proxy do Railway.
+
+    O cliente pode enviar o próprio X-Forwarded-For com qualquer valor; o proxy
+    apenas ACRESCENTA o IP de quem se conectou a ele no final da lista. Por isso
+    o único valor confiável é o último — nunca o primeiro.
+    """
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
-        return forwarded.split(",")[0].strip()
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+        if parts:
+            return parts[-1]
     return request.client.host if request.client else "unknown"
 
 
@@ -50,15 +60,29 @@ def check_rate_limit(key: str, max_attempts: int = 10, window_seconds: int = 60)
     _attempts[key].append(now)
 
 
-async def require_auth(authorization: str = Header(default="")) -> str:
+async def get_token_payload(authorization: str = Header(default="")) -> dict:
     """
-    Extrai e valida o Bearer token.
-    Retorna o user_id ou levanta 401.
+    Extrai e valida o Bearer token e confere se a sessão (jti) ainda está ativa.
+    Retorna o payload do JWT ou levanta 401.
     """
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado.")
-    token = authorization[7:]
-    user_id = verify_token(token)
-    if not user_id:
+    payload = decode_token(authorization[7:])
+    if not payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido ou expirado.")
-    return user_id
+
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        active = await conn.fetchval(
+            "SELECT 1 FROM sessions WHERE jti=$1 AND user_id=$2::uuid AND expires_at > NOW()",
+            payload["jti"], payload["sub"],
+        )
+    if not active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sessão encerrada. Faça login novamente.")
+    return payload
+
+
+async def require_auth(authorization: str = Header(default="")) -> str:
+    """Retorna o user_id de uma sessão válida ou levanta 401."""
+    payload = await get_token_payload(authorization)
+    return payload["sub"]

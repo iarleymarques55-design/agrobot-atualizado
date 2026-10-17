@@ -2,10 +2,11 @@
 auth_utils.py — Helpers de JWT e hash de senha.
 """
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 if not JWT_SECRET:
@@ -18,18 +19,26 @@ JWT_EXPIRE_DAYS = 7  # reduzido de 30 para 7 dias
 
 
 # ── JWT ──────────────────────────────────────────────────────
-def create_token(user_id: str) -> str:
+def create_token(user_id: str) -> tuple[str, str, datetime]:
+    """
+    Gera um JWT com um identificador único (jti).
+    Retorna (token, jti, expires_at) — o jti é gravado em `sessions` para permitir logout real.
+    """
     expire = datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRE_DAYS)
-    return jwt.encode({"sub": user_id, "exp": expire}, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    jti = uuid.uuid4().hex
+    token = jwt.encode({"sub": user_id, "jti": jti, "exp": expire}, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return token, jti, expire
 
 
-def verify_token(token: str) -> str | None:
-    """Retorna user_id (sub) ou None se inválido."""
+def decode_token(token: str) -> dict | None:
+    """Retorna o payload ({sub, jti, exp}) ou None se o token for inválido/expirado."""
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload.get("sub")
-    except JWTError:
+    except jwt.PyJWTError:
         return None
+    if not payload.get("sub") or not payload.get("jti"):
+        return None
+    return payload
 
 
 # ── Senha ────────────────────────────────────────────────────

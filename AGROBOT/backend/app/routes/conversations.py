@@ -1,6 +1,9 @@
 """
 routes/conversations.py — CRUD de conversas e mensagens.
 """
+from typing import Literal
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -15,7 +18,7 @@ class CreateConvBody(BaseModel):
     title: str = Field(default="Nova conversa", max_length=120)
 
 class SaveMessageBody(BaseModel):
-    role: str
+    role: Literal["user", "assistant"]
     content: str = Field(default="", max_length=15000)
 
 
@@ -49,7 +52,7 @@ async def create_conversation(body: CreateConvBody, user_id: str = Depends(requi
 
 # ── DELETE /api/conversations/{conv_id} ──────────────────────
 @router.delete("/conversations/{conv_id}")
-async def delete_conversation(conv_id: str, user_id: str = Depends(require_auth)):
+async def delete_conversation(conv_id: UUID, user_id: str = Depends(require_auth)):
     pool = await get_pool()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -63,7 +66,7 @@ async def delete_conversation(conv_id: str, user_id: str = Depends(require_auth)
 
 # ── GET /api/conversations/{conv_id}/messages ─────────────────
 @router.get("/conversations/{conv_id}/messages")
-async def list_messages(conv_id: str, user_id: str = Depends(require_auth)):
+async def list_messages(conv_id: UUID, user_id: str = Depends(require_auth)):
     pool = await get_pool()
     async with pool.acquire() as conn:
         conv = await conn.fetchrow(
@@ -82,11 +85,9 @@ async def list_messages(conv_id: str, user_id: str = Depends(require_auth)):
 
 # ── POST /api/conversations/{conv_id}/messages ────────────────
 @router.post("/conversations/{conv_id}/messages", status_code=201)
-async def save_message(conv_id: str, body: SaveMessageBody, user_id: str = Depends(require_auth)):
+async def save_message(conv_id: UUID, body: SaveMessageBody, user_id: str = Depends(require_auth)):
     # SEC-04: Rate limit — máx 30 mensagens/minuto por usuário
     check_rate_limit(f"msg:save:{user_id}", max_attempts=30, window_seconds=60)
-    if body.role not in ("user", "assistant"):
-        raise HTTPException(400, "role deve ser 'user' ou 'assistant'.")
     if not body.content or not body.content.strip():
         return {"ok": True, "message": None}
 

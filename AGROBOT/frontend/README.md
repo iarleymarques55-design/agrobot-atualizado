@@ -1,16 +1,19 @@
-# React + Vite
+# AgroBot — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+SPA em React 19 + Vite. A visão geral do projeto, as variáveis de ambiente e as instruções completas estão no [README da raiz](../README.md).
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev      # http://localhost:5173 — /api é redirecionado para http://localhost:8000
+npm run lint     # oxlint
+npm run build    # gera dist/ com a Content-Security-Policy de produção
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Pasta | Conteúdo |
+|---|---|
+| `src/api/` | cliente HTTP, sessão (token) e streaming SSE do chat |
+| `src/components/chat/` | sidebar, barra superior, mensagens, composer e tela inicial |
+| `src/components/landing/` | modal de autenticação, ícones e conteúdo da landing |
+| `src/components/modals/` | perfil e configurações do assistente |
+| `src/utils/` | Markdown (marked + DOMPurify), exportação PDF/Word, preferências |
+| `src/pages/` | `Landing`, `Chat` e `Privacy` |

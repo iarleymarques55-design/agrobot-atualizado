@@ -2,10 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Chat from './pages/Chat';
 import Privacy from './pages/Privacy';
+import { getToken } from './api/client';
 
 function PrivateRoute({ children }) {
-  const token = sessionStorage.getItem('agro_token');
-  return token ? children : <Navigate to="/" replace />;
+  return getToken() ? children : <Navigate to="/" replace />;
 }
 
 export default function App() {
