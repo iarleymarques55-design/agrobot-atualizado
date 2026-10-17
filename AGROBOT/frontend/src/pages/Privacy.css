@@ -9,7 +9,7 @@
   width: 100%;
   /* Fundo fotográfico limpo em alta definição com folhagem integrada e sem sobreposição */
   background-color: #f1f6ef;
-  background-image: url('/images/privacy_bg_clean.jpg');
+  background-image: url('/images/privacy_bg_clean.webp');
   background-repeat: no-repeat;
   background-position: center top;
   background-size: cover;

@@ -1,2 +1,8 @@
 .env
 .env.local
+
+# Configurações locais do editor (podem conter nomes de bancos locais)
+.vscode/
+
+# Prompts usados durante o desenvolvimento com IA (material pessoal, fora do repositório)
+frontend/prompts/

@@ -4,18 +4,18 @@ routes/auth.py — Registro, login, verificação de email (Brevo), Google OAuth
 import os
 import re
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from pydantic import BaseModel
+
 import httpx
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
 
 from ..database import get_pool
 from ..auth_utils import create_token, hash_password, verify_password
-from ..dependencies import require_auth, check_rate_limit, get_client_ip
+from ..dependencies import require_auth, get_token_payload, check_rate_limit, get_client_ip
 from ..email_service import send_verification_email, generate_verification_code
 
 router = APIRouter(prefix="/api", tags=["auth"])
-
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 # Tempo de expiração do código de verificação
 VERIFICATION_EXPIRY_MINUTES = 15
@@ -23,40 +23,75 @@ VERIFICATION_EXPIRY_MINUTES = 15
 # Regex de email simples mas robusto
 _EMAIL_RE = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 
+# Resposta idêntica para qualquer e-mail, exista ele ou não (evita enumeração de usuários)
+_NEUTRAL_CODE_MSG = "Se o e-mail puder receber um código, ele chegará em instantes. Verifique sua caixa de entrada."
+
+_USER_COLUMNS = (
+    "id::text, name, email, plan, COALESCE(profession, '') AS profession, "
+    "picture, email_verified, COALESCE(registry, '') AS registry"
+)
+
 
 def _valid_email(email: str) -> bool:
     return bool(_EMAIL_RE.match(email)) and len(email) <= 254
 
 
-
 # ── Schemas ──────────────────────────────────────────────────
 class RegisterBody(BaseModel):
-    name: str
-    email: str
-    password: str
+    name: str = Field(max_length=200)
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=1024)
 
 class LoginBody(BaseModel):
-    email: str
-    password: str
-
-class GoogleAuthBody(BaseModel):
-    id_token: str | None = None
-    access_token: str | None = None
+    email: str = Field(max_length=254)
+    password: str = Field(max_length=1024)
 
 class GoogleAuthCodeBody(BaseModel):
-    code: str  # Authorization Code do fluxo OAuth2 popup
+    code: str = Field(max_length=2048)  # Authorization Code do fluxo OAuth2 popup
 
 class SendVerificationBody(BaseModel):
-    email: str
+    email: str = Field(max_length=254)
 
 class VerifyEmailBody(BaseModel):
-    email: str
-    code: str
+    email: str = Field(max_length=254)
+    code: str = Field(max_length=12)
 
 class UpdateProfileBody(BaseModel):
     name: str | None = None
-    plan: str | None = None
+    profession: str | None = None
     registry: str | None = None
+
+
+# ── Helpers ──────────────────────────────────────────────────
+async def _issue_session(conn, user_id: str) -> str:
+    """Cria o JWT, registra o jti em `sessions` e limpa sessões expiradas do usuário."""
+    token, jti, expires_at = create_token(user_id)
+    await conn.execute(
+        "DELETE FROM sessions WHERE user_id=$1::uuid AND expires_at <= NOW()", user_id
+    )
+    await conn.execute(
+        "INSERT INTO sessions (user_id, jti, expires_at) VALUES ($1::uuid, $2, $3)",
+        user_id, jti, expires_at,
+    )
+    return token
+
+
+async def _store_new_code(
+    conn, email: str, pending_name: str | None = None, pending_password_hash: str | None = None
+) -> str:
+    """Invalida códigos anteriores do e-mail e grava um novo. Retorna o código gerado."""
+    code = generate_verification_code()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_EXPIRY_MINUTES)
+    await conn.execute(
+        "UPDATE email_verifications SET used=TRUE WHERE email=$1 AND used=FALSE",
+        email,
+    )
+    await conn.execute(
+        "INSERT INTO email_verifications (email, code, expires_at, pending_name, pending_password_hash) "
+        "VALUES ($1,$2,$3,$4,$5)",
+        email, code, expires_at, pending_name, pending_password_hash,
+    )
+    return code
 
 
 # ── GET /api/config ───────────────────────────────────────────
@@ -84,63 +119,35 @@ async def register(body: RegisterBody, request: Request):
     if len(password) > 128:
         raise HTTPException(400, "Senha muito longa.")
 
+    # Calcula o hash sempre, para que o tempo de resposta não revele se o e-mail existe
+    pw_hash = hash_password(password)
+    code = None
+
     pool = await get_pool()
     async with pool.acquire() as conn:
         exists = await conn.fetchrow(
-            "SELECT id::text, name, email_verified FROM users WHERE email=$1", email
+            "SELECT id::text, email_verified FROM users WHERE email=$1", email
         )
-        if exists:
-            if exists["email_verified"]:
-                raise HTTPException(409, "E-mail já cadastrado e confirmado. Faça login.")
-            # Se a conta existe mas NÃO foi verificada, atualiza nome e senha
-            pw_hash = hash_password(password)
-            user = await conn.fetchrow(
-                "UPDATE users SET name=$1, password_hash=$2 WHERE id=$3::uuid "
-                "RETURNING id::text, name, email, plan, email_verified",
-                name, pw_hash, exists["id"],
-            )
-        else:
-            pw_hash = hash_password(password)
-            # Cria o usuário com email_verified=FALSE
-            user = await conn.fetchrow(
-                "INSERT INTO users (name, email, password_hash, email_verified) "
-                "VALUES ($1,$2,$3,FALSE) "
-                "RETURNING id::text, name, email, plan, email_verified",
+        if not exists:
+            await conn.execute(
+                "INSERT INTO users (name, email, password_hash, email_verified) VALUES ($1,$2,$3,FALSE)",
                 name, email, pw_hash,
             )
+            code = await _store_new_code(conn, email)
+        elif not exists["email_verified"]:
+            # Conta ainda não confirmada: NÃO sobrescreve nome/senha agora. Os dados novos ficam
+            # pendentes no código e só valem se quem tem acesso ao e-mail confirmar o código.
+            code = await _store_new_code(conn, email, pending_name=name, pending_password_hash=pw_hash)
+        # Conta já confirmada: não faz nada, mas responde igual (não revela que o e-mail existe)
 
-    # Envia o código de verificação imediatamente
-    code = generate_verification_code()
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_EXPIRY_MINUTES)
-
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        # Invalida códigos anteriores para este email
-        await conn.execute(
-            "UPDATE email_verifications SET used=TRUE WHERE email=$1 AND used=FALSE",
-            email,
-        )
-        # Insere novo código
-        await conn.execute(
-            "INSERT INTO email_verifications (email, code, expires_at) VALUES ($1,$2,$3)",
-            email, code, expires_at,
-        )
-
-    # Envia via Brevo (não bloqueia se falhar)
-    await send_verification_email(email, name, code)
+    if code:
+        await send_verification_email(email, name, code)
 
     return {
         "ok": True,
         "requires_verification": True,
         "email": email,
-        "message": "Código de verificação enviado para o seu e-mail!",
-        "user": {
-            "id": user["id"],
-            "name": user["name"],
-            "email": user["email"],
-            "plan": user["plan"],
-            "email_verified": False,
-        },
+        "message": _NEUTRAL_CODE_MSG,
     }
 
 
@@ -148,49 +155,41 @@ async def register(body: RegisterBody, request: Request):
 @router.post("/send-verification")
 async def send_verification(body: SendVerificationBody, request: Request):
     """Reenvia ou envia um novo código de verificação para o email."""
-    # Rate limit: 3 envios por email por minuto
-    check_rate_limit(f"send-verif:{body.email.lower().strip()}", max_attempts=3, window_seconds=60)
-
     email = body.email.lower().strip()
+    # Rate limit: 3 envios por e-mail e 10 por IP por minuto
+    check_rate_limit(f"send-verif:{email}", max_attempts=3, window_seconds=60)
+    check_rate_limit(f"send-verif-ip:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
+
     if not email or not _valid_email(email):
         raise HTTPException(400, "E-mail inválido.")
 
     pool = await get_pool()
     async with pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id::text, name, email, email_verified FROM users WHERE email=$1",
+            "SELECT name, email_verified FROM users WHERE email=$1",
             email,
         )
-        if not user:
-            raise HTTPException(404, "Usuário não encontrado.")
-        if user["email_verified"]:
-            return {"ok": True, "message": "E-mail já verificado."}
+        if not user or user["email_verified"]:
+            return {"ok": True, "message": _NEUTRAL_CODE_MSG}
 
-        # Invalida códigos anteriores
-        await conn.execute(
-            "UPDATE email_verifications SET used=TRUE WHERE email=$1 AND used=FALSE",
+        # Mantém nome/senha pendentes do último cadastro, se houver
+        pending = await conn.fetchrow(
+            "SELECT pending_name, pending_password_hash FROM email_verifications "
+            "WHERE email=$1 AND used=FALSE ORDER BY created_at DESC LIMIT 1",
             email,
         )
-
-        # Gera e insere novo código
-        code = generate_verification_code()
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_EXPIRY_MINUTES)
-        await conn.execute(
-            "INSERT INTO email_verifications (email, code, expires_at) VALUES ($1,$2,$3)",
-            email, code, expires_at,
+        code = await _store_new_code(
+            conn, email,
+            pending_name=pending["pending_name"] if pending else None,
+            pending_password_hash=pending["pending_password_hash"] if pending else None,
         )
 
-    # Envia via Brevo
-    sent = await send_verification_email(email, user["name"], code)
-    if not sent:
-        raise HTTPException(503, "Falha ao enviar e-mail. Tente novamente em instantes.")
-
-    return {"ok": True, "message": f"Código enviado para {email}."}
+    await send_verification_email(email, user["name"], code)
+    return {"ok": True, "message": _NEUTRAL_CODE_MSG}
 
 
-# ── POST /api/verify-email e /api/verify-code ─────────────────
+# ── POST /api/verify-email ────────────────────────────────────
 @router.post("/verify-email")
-@router.post("/verify-code")
 async def verify_email(body: VerifyEmailBody, request: Request):
     """Verifica o código de 6 dígitos enviado ao e-mail do usuário."""
     # Rate limit: 10 tentativas por IP por minuto (anti brute-force do código)
@@ -207,7 +206,7 @@ async def verify_email(body: VerifyEmailBody, request: Request):
         # Busca o código mais recente e ainda não usado
         record = await conn.fetchrow(
             """
-            SELECT id, code, expires_at, used, attempts
+            SELECT id, code, expires_at, attempts, pending_name, pending_password_hash
             FROM email_verifications
             WHERE email=$1 AND used=FALSE
             ORDER BY created_at DESC
@@ -219,9 +218,6 @@ async def verify_email(body: VerifyEmailBody, request: Request):
         if not record:
             raise HTTPException(400, "Nenhum código de verificação ativo para este e-mail.")
 
-        if record["used"]:
-            raise HTTPException(400, "Código já utilizado. Solicite um novo código.")
-
         # SEC-03: Bloqueia após 5 tentativas incorretas
         if record["attempts"] >= 5:
             await conn.execute(
@@ -230,12 +226,11 @@ async def verify_email(body: VerifyEmailBody, request: Request):
             )
             raise HTTPException(400, "Máximo de tentativas excedido. Solicite um novo código.")
 
-        now_utc = datetime.now(timezone.utc)
         expires_at = record["expires_at"]
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-        if now_utc > expires_at:
+        if datetime.now(timezone.utc) > expires_at:
             raise HTTPException(400, "Código expirado. Solicite um novo código.")
 
         if record["code"] != code:
@@ -247,29 +242,24 @@ async def verify_email(body: VerifyEmailBody, request: Request):
             remaining = 4 - record["attempts"]
             raise HTTPException(400, f"Código incorreto. Você tem {max(remaining, 0)} tentativa(s) restante(s).")
 
-        # Marca o código como usado e o usuário como verificado
+        # Marca o código como usado e o usuário como verificado.
+        # Nome/senha pendentes (de um recadastro) só passam a valer agora, com o código confirmado.
         await conn.execute(
             "UPDATE email_verifications SET used=TRUE WHERE id=$1",
             record["id"],
         )
         user = await conn.fetchrow(
-            "UPDATE users SET email_verified=TRUE WHERE email=$1 "
-            "RETURNING id::text, name, email, plan, email_verified",
-            email,
+            "UPDATE users SET email_verified=TRUE, "
+            "name=COALESCE($2, name), password_hash=COALESCE($3, password_hash) "
+            f"WHERE email=$1 RETURNING {_USER_COLUMNS}",
+            email, record["pending_name"], record["pending_password_hash"],
         )
+        if not user:
+            raise HTTPException(400, "Nenhum código de verificação ativo para este e-mail.")
 
-    token = create_token(str(user["id"]))
-    return {
-        "ok": True,
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "name": user["name"],
-            "email": user["email"],
-            "plan": user["plan"],
-            "email_verified": user["email_verified"],
-        },
-    }
+        token = await _issue_session(conn, user["id"])
+
+    return {"ok": True, "token": token, "user": dict(user)}
 
 
 # ── POST /api/login ───────────────────────────────────────────
@@ -287,8 +277,7 @@ async def login(body: LoginBody, request: Request):
     pool = await get_pool()
     async with pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id::text, name, email, password_hash, plan, email_verified "
-            "FROM users WHERE email=$1",
+            f"SELECT {_USER_COLUMNS}, password_hash FROM users WHERE email=$1",
             email,
         )
 
@@ -303,17 +292,8 @@ async def login(body: LoginBody, request: Request):
 
     # Se email não verificado, gera novo código, envia e retorna flag para o frontend redirecionar
     if not user["email_verified"]:
-        code = generate_verification_code()
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_EXPIRY_MINUTES)
         async with pool.acquire() as conn:
-            await conn.execute(
-                "UPDATE email_verifications SET used=TRUE WHERE email=$1 AND used=FALSE",
-                email,
-            )
-            await conn.execute(
-                "INSERT INTO email_verifications (email, code, expires_at) VALUES ($1,$2,$3)",
-                email, code, expires_at,
-            )
+            code = await _store_new_code(conn, email)
         await send_verification_email(email, user["name"], code)
         return {
             "token": None,
@@ -322,91 +302,23 @@ async def login(body: LoginBody, request: Request):
             "message": "E-mail pendente de confirmação. Enviamos um novo código para o seu e-mail!",
         }
 
-    token = create_token(str(user["id"]))
-    return {
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "name": user["name"],
-            "email": user["email"],
-            "plan": user["plan"],
-            "email_verified": user["email_verified"],
-        },
-    }
+    async with pool.acquire() as conn:
+        token = await _issue_session(conn, user["id"])
 
-
-# ── POST /api/google-auth ─────────────────────────────────────
-@router.post("/google-auth")
-async def google_auth(body: GoogleAuthBody, request: Request):
-    """
-    Valida o Access Token ou ID Token do Google server-side antes de criar a sessão.
-    O fluxo com Access Token via popup não exige client_secret no backend.
-    """
-    check_rate_limit(f"google-auth:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
-
-    if not body.id_token and not body.access_token:
-        raise HTTPException(400, "Token do Google é obrigatório.")
-
-    expected_cid = os.getenv("GOOGLE_CLIENT_ID", "")
-    email, sub, name, picture = "", "", "", ""
-
-    if body.access_token:
-        # Valida via endpoint oficial userinfo com o Bearer token
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(
-                    "https://www.googleapis.com/oauth2/v3/userinfo",
-                    headers={"Authorization": f"Bearer {body.access_token}"},
-                )
-            if resp.status_code != 200:
-                raise HTTPException(401, "Token de acesso do Google inválido ou expirado.")
-            payload = resp.json()
-        except httpx.RequestError:
-            raise HTTPException(503, "Não foi possível verificar o token junto ao Google.")
-
-        email = payload.get("email", "").lower().strip()
-        sub = payload.get("sub", "")
-        name = payload.get("name") or email.split("@")[0]
-        picture = payload.get("picture", "")
-
-    elif body.id_token:
-        # Verifica o ID Token junto à API pública do Google
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(
-                    "https://oauth2.googleapis.com/tokeninfo",
-                    params={"id_token": body.id_token},
-                )
-            if resp.status_code != 200:
-                raise HTTPException(401, "Token do Google inválido.")
-            payload = resp.json()
-        except httpx.RequestError:
-            raise HTTPException(503, "Não foi possível verificar o token do Google.")
-
-        # Valida audience e issuer
-        if expected_cid and payload.get("aud") != expected_cid:
-            raise HTTPException(401, "Token não pertence a esta aplicação.")
-        if payload.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
-            raise HTTPException(401, "Token do Google inválido.")
-
-        email = payload.get("email", "").lower().strip()
-        sub = payload.get("sub", "")
-        name = payload.get("name") or email.split("@")[0]
-        picture = payload.get("picture", "")
-
-    if not email or not sub:
-        raise HTTPException(400, "Dados do Google incompletos.")
-
-    return await _upsert_google_user_and_token(email, sub, name, picture)
+    profile = dict(user)
+    profile.pop("password_hash", None)
+    return {"token": token, "user": profile}
 
 
 # ── POST /api/google-auth-code ────────────────────────────────
 @router.post("/google-auth-code")
 async def google_auth_code(body: GoogleAuthCodeBody, request: Request):
     """
-    Troca um Authorization Code (fluxo popup OAuth2) por tokens do Google,
-    obtém informações do usuário e cria/atualiza a conta.
-    Funciona corretamente dentro de modais — ao contrário do One Tap.
+    Troca um Authorization Code (fluxo popup OAuth2) por tokens do Google e cria/atualiza a conta.
+
+    Esse é o único fluxo Google aceito: o código só pode ser trocado com o client_secret
+    do AgroBot, então um token emitido para outro aplicativo nunca é aceito aqui
+    (proteção contra "token substitution").
     """
     check_rate_limit(f"google-auth:{get_client_ip(request)}", max_attempts=10, window_seconds=60)
 
@@ -419,7 +331,7 @@ async def google_auth_code(body: GoogleAuthCodeBody, request: Request):
     if not client_id or not client_secret:
         raise HTTPException(503, "Autenticação Google não configurada no servidor.")
 
-    # Troca o authorization code por tokens de acesso
+    # Troca o authorization code por tokens
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             token_resp = await client.post(
@@ -432,41 +344,35 @@ async def google_auth_code(body: GoogleAuthCodeBody, request: Request):
                     "grant_type": "authorization_code",
                 },
             )
-        if token_resp.status_code != 200:
-            raise HTTPException(401, "Não foi possível trocar o código Google por tokens.")
-        token_data = token_resp.json()
     except httpx.RequestError:
         raise HTTPException(503, "Não foi possível comunicar com o Google.")
 
-    id_token = token_data.get("id_token", "")
-    access_token = token_data.get("access_token", "")
+    if token_resp.status_code != 200:
+        raise HTTPException(401, "Não foi possível trocar o código Google por tokens.")
 
-    if not id_token and not access_token:
+    id_token = token_resp.json().get("id_token", "")
+    if not id_token:
         raise HTTPException(401, "Resposta inválida do Google.")
 
-    # Obtém informações do usuário via userinfo endpoint
+    # O id_token veio direto do endpoint de token do Google via TLS, autenticado com o
+    # nosso client_secret — a especificação OpenID (3.1.3.7) dispensa checar a assinatura
+    # nesse caso. Ainda assim conferimos emissor, audiência e e-mail verificado.
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            if access_token:
-                userinfo_resp = await client.get(
-                    "https://www.googleapis.com/oauth2/v3/userinfo",
-                    headers={"Authorization": f"Bearer {access_token}"},
-                )
-            else:
-                userinfo_resp = await client.get(
-                    "https://oauth2.googleapis.com/tokeninfo",
-                    params={"id_token": id_token},
-                )
-        if userinfo_resp.status_code != 200:
-            raise HTTPException(401, "Não foi possível obter dados do usuário Google.")
-        payload = userinfo_resp.json()
-    except httpx.RequestError:
-        raise HTTPException(503, "Não foi possível verificar os dados do Google.")
+        claims = jwt.decode(id_token, options={"verify_signature": False})
+    except jwt.PyJWTError:
+        raise HTTPException(401, "Resposta inválida do Google.")
 
-    email = payload.get("email", "").lower().strip()
-    sub = payload.get("sub", "")
-    name = payload.get("name") or email.split("@")[0]
-    picture = payload.get("picture", "")
+    if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise HTTPException(401, "Token do Google inválido.")
+    if claims.get("aud") != client_id:
+        raise HTTPException(401, "Token não pertence a esta aplicação.")
+    if claims.get("email_verified") is not True:
+        raise HTTPException(401, "O e-mail desta conta Google não foi verificado pelo Google.")
+
+    email = (claims.get("email") or "").lower().strip()
+    sub = claims.get("sub", "")
+    name = claims.get("name") or email.split("@")[0]
+    picture = claims.get("picture", "")
 
     if not email or not sub:
         raise HTTPException(400, "Dados do Google incompletos.")
@@ -479,36 +385,37 @@ async def _upsert_google_user_and_token(email: str, sub: str, name: str, picture
     pool = await get_pool()
     async with pool.acquire() as conn:
         existing = await conn.fetchrow(
-            "SELECT id::text, name, email, plan FROM users WHERE email=$1", email
+            "SELECT id::text, email_verified FROM users WHERE email=$1", email
         )
         if existing:
-            await conn.execute(
-                "UPDATE users SET google_sub=$1, picture=$2, email_verified=TRUE WHERE email=$3",
-                sub, picture, email,
-            )
-            user = dict(existing)
+            if existing["email_verified"]:
+                user = await conn.fetchrow(
+                    f"UPDATE users SET google_sub=$1, picture=$2 WHERE id=$3::uuid RETURNING {_USER_COLUMNS}",
+                    sub, picture, existing["id"],
+                )
+            else:
+                # A conta foi criada por e-mail/senha mas nunca confirmada: qualquer pessoa pode ter
+                # feito esse cadastro. O Google acabou de provar quem é o dono do e-mail, então a
+                # senha definida por terceiros é descartada e os códigos pendentes são invalidados.
+                user = await conn.fetchrow(
+                    "UPDATE users SET google_sub=$1, picture=$2, email_verified=TRUE, "
+                    f"password_hash=NULL, name=$3 WHERE id=$4::uuid RETURNING {_USER_COLUMNS}",
+                    sub, picture, name, existing["id"],
+                )
+                await conn.execute(
+                    "UPDATE email_verifications SET used=TRUE WHERE email=$1 AND used=FALSE",
+                    email,
+                )
         else:
-            row = await conn.fetchrow(
+            user = await conn.fetchrow(
                 "INSERT INTO users (name, email, google_sub, picture, email_verified) "
-                "VALUES ($1,$2,$3,$4,TRUE) "
-                "RETURNING id::text, name, email, plan",
+                f"VALUES ($1,$2,$3,$4,TRUE) RETURNING {_USER_COLUMNS}",
                 name, email, sub, picture,
             )
-            user = dict(row)
 
-    token = create_token(str(user["id"]))
-    return {
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "name": user["name"],
-            "email": user["email"],
-            "plan": user["plan"],
-            "email_verified": True,
-        },
-    }
+        token = await _issue_session(conn, user["id"])
 
-
+    return {"token": token, "user": dict(user)}
 
 
 # ── GET /api/me ───────────────────────────────────────────────
@@ -517,12 +424,7 @@ async def me(user_id: str = Depends(require_auth)):
     pool = await get_pool()
     async with pool.acquire() as conn:
         user = await conn.fetchrow(
-            """
-            SELECT id::text, name, email, plan, picture, email_verified,
-                   COALESCE(registry, '') AS registry
-            FROM users
-            WHERE id=$1::uuid
-            """,
+            f"SELECT {_USER_COLUMNS} FROM users WHERE id=$1::uuid",
             user_id,
         )
     if not user:
@@ -533,46 +435,38 @@ async def me(user_id: str = Depends(require_auth)):
 # ── PUT /api/me ───────────────────────────────────────────────
 @router.put("/me")
 async def update_me(body: UpdateProfileBody, user_id: str = Depends(require_auth)):
-    pool = await get_pool()
+    # O campo "plan" (plano de assinatura) NÃO é editável pelo usuário.
     name = body.name.strip()[:100] if body.name is not None else None
-    plan = body.plan.strip()[:100] if body.plan is not None else None
+    profession = body.profession.strip()[:100] if body.profession is not None else None
     registry = body.registry.strip()[:100] if body.registry is not None else None
 
+    pool = await get_pool()
     async with pool.acquire() as conn:
-        current = await conn.fetchrow(
-            """
-            SELECT id::text, name, email, plan, picture, email_verified,
-                   COALESCE(registry, '') AS registry
-            FROM users
-            WHERE id=$1::uuid
-            """,
-            user_id,
-        )
-        if not current:
-            raise HTTPException(404, "Usuário não encontrado.")
-
-        new_name = name if name is not None and name != "" else current["name"]
-        new_plan = plan if plan is not None and plan != "" else current["plan"]
-        new_registry = registry if registry is not None else current["registry"]
-
         updated = await conn.fetchrow(
-            """
+            f"""
             UPDATE users
-            SET name = $1, plan = $2, registry = $3
+            SET name       = COALESCE(NULLIF($1, ''), name),
+                profession = COALESCE($2, profession),
+                registry   = COALESCE($3, registry)
             WHERE id = $4::uuid
-            RETURNING id::text, name, email, plan, picture, email_verified,
-                      COALESCE(registry, '') AS registry
+            RETURNING {_USER_COLUMNS}
             """,
-            new_name,
-            new_plan,
-            new_registry,
+            name,
+            profession,
+            registry,
             user_id,
         )
+    if not updated:
+        raise HTTPException(404, "Usuário não encontrado.")
 
     return {"user": dict(updated)}
 
 
 # ── POST /api/logout ──────────────────────────────────────────
 @router.post("/logout")
-async def logout():
+async def logout(payload: dict = Depends(get_token_payload)):
+    """Apaga a sessão: o token deixa de ser aceito imediatamente."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM sessions WHERE jti=$1", payload["jti"])
     return {"ok": True}
